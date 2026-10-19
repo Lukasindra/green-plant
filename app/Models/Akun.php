@@ -15,7 +15,7 @@ class Akun extends Authenticatable
 
     // 'role' sengaja TIDAK di fillable agar tidak bisa diubah lewat input user
     protected $fillable = ['nama', 'email', 'password', 'no_hp'];
-    protected $hidden = ['password'];
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
