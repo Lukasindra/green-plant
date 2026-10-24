@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f7f8f3">
-    <title>@yield('title', 'Green Plant')</title>
+    <title>@hasSection('title')@yield('title')@else @yield('judul', 'Beranda') | Green Plant @endif</title>
     <meta name="description" content="Temukan tanaman pilihan dan layanan perawatan tanaman dari Green Plant.">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -12,7 +12,22 @@
     @include('component.navbar')
 
     <main>
-        @yield('content')
+        @if (session('status'))
+            <div class="page-container" role="status">
+                <p>{{ session('status') }}</p>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="page-container" role="alert">
+                <p>{{ session('error') }}</p>
+            </div>
+        @endif
+
+        @hasSection('content')
+            @yield('content')
+        @else
+            @yield('isi')
+        @endif
     </main>
 
     @include('component.footer')
