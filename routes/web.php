@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\KeranjangController;
 use App\Http\Controllers\ProdukController;
@@ -10,7 +11,12 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
+Route::get('/admin/dashboard', DashboardController::class)->middleware('auth')->name('admin.dashboard');
+Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang.index');
 Route::post('/keranjang/tambah', [KeranjangController::class, 'tambah'])->name('keranjang.tambah');
+Route::patch('/keranjang/{produk}', [KeranjangController::class, 'update'])->name('keranjang.update');
+Route::delete('/keranjang/{produk}', [KeranjangController::class, 'destroy'])->name('keranjang.destroy');
+Route::delete('/keranjang', [KeranjangController::class, 'clear'])->name('keranjang.clear');
 
 // Hanya untuk yang belum login
 Route::middleware('guest')->group(function () {

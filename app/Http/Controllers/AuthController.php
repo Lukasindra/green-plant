@@ -18,7 +18,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
@@ -29,7 +29,10 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        // TODO: arahkan admin ke dashboard dan kurir ke dasbor kurir setelah halamannya dibuat
+        if (Auth::user()->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return redirect()->intended(route('produk.index'));
     }
 
@@ -41,24 +44,24 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([
-            'nama'     => ['required', 'string', 'max:100'],
-            'email'    => ['required', 'email', 'max:100', 'unique:akun,email'],
-            'no_hp'    => ['nullable', 'regex:/^[0-9+]{8,20}$/'],
-            'alamat'   => ['required', 'string', 'max:500'],
+            'nama' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:100', 'unique:akun,email'],
+            'no_hp' => ['nullable', 'regex:/^[0-9+]{8,20}$/'],
+            'alamat' => ['required', 'string', 'max:500'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
-            'email.unique'    => 'Email ini sudah terdaftar.',
-            'password.min'    => 'Password minimal 8 karakter.',
+            'email.unique' => 'Email ini sudah terdaftar.',
+            'password.min' => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak sama.',
-            'no_hp.regex'     => 'Nomor HP hanya berisi angka (8 sampai 20 digit).',
+            'no_hp.regex' => 'Nomor HP hanya berisi angka (8 sampai 20 digit).',
         ]);
 
         $akun = DB::transaction(function () use ($data) {
             $akun = new Akun([
-                'nama'     => $data['nama'],
-                'email'    => $data['email'],
+                'nama' => $data['nama'],
+                'email' => $data['email'],
                 'password' => $data['password'],   // di-hash otomatis oleh cast
-                'no_hp'    => $data['no_hp'] ?? null,
+                'no_hp' => $data['no_hp'] ?? null,
             ]);
             $akun->role = 'customer';              // peran selalu customer untuk pendaftaran publik
             $akun->save();
@@ -71,7 +74,7 @@ class AuthController extends Controller
         Auth::login($akun);
         $request->session()->regenerate();
 
-        return redirect()->route('produk.index')->with('status', 'Akun berhasil dibuat. Selamat datang, ' . $akun->nama . '!');
+        return redirect()->route('produk.index')->with('status', 'Akun berhasil dibuat. Selamat datang, '.$akun->nama.'!');
     }
 
     public function logout(Request $request)

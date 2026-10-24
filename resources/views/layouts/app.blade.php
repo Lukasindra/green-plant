@@ -14,12 +14,12 @@
     <main>
         @if (session('status'))
             <div class="page-container" role="status">
-                <p>{{ session('status') }}</p>
+                <p class="my-4 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">{{ session('status') }}</p>
             </div>
         @endif
         @if (session('error'))
             <div class="page-container" role="alert">
-                <p>{{ session('error') }}</p>
+                <p class="my-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</p>
             </div>
         @endif
 
