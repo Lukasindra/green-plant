@@ -37,7 +37,7 @@
                 <a href="#" aria-label="Cari" class="hover:text-brand-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
                 </a>
-                <a href="#" aria-label="Keranjang" class="relative hover:text-brand-700">
+                <a href="{{ route('keranjang.index') }}" aria-label="Keranjang" class="relative hover:text-brand-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg>
                     @if ($jumlahKeranjang > 0)
                         <span class="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-700 px-1 text-[10px] font-semibold text-white">{{ $jumlahKeranjang }}</span>
@@ -46,7 +46,7 @@
 
                 @auth
                     <div class="flex items-center gap-3 text-sm">
-                        <span class="hidden max-w-[8rem] truncate text-gray-700 md:inline">{{ auth()->user()->nama }}</span>
+                        <span class="hidden max-w-32 truncate text-gray-700 md:inline">{{ auth()->user()->nama }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="text-xs font-medium text-brand-700 hover:underline">Keluar</button>
