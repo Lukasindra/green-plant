@@ -29,7 +29,13 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        // TODO: arahkan admin ke dashboard dan kurir ke dasbor kurir setelah halamannya dibuat
+        // Admin langsung ke dashboard (dasbor kurir menyusul)
+        /** @var \App\Models\Akun $akun */ 
+        $akun = Auth::user();
+        if ($akun->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return redirect()->intended(route('produk.index'));
     }
 

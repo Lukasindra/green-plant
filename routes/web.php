@@ -1,6 +1,5 @@
 <?php
-// GANTI seluruh isi routes/web.php dengan ini
-
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\KeranjangController;
@@ -11,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/produk');
 
 Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
+Route::get('/admin/dashboard', DashboardController::class)->middleware('auth')->name('admin.dashboard');
 
 // Keranjang (session, boleh tanpa login)
 Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang.index');
