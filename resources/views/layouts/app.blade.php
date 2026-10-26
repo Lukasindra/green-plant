@@ -46,6 +46,9 @@
 
                 @auth
                     <div class="flex items-center gap-3 text-sm">
+                        @if (auth()->user()->isCustomer())
+                            <a href="{{ route('pesanan.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Pesanan</a>
+                        @endif
                         <span class="hidden max-w-32 truncate text-gray-700 md:inline">{{ auth()->user()->nama }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

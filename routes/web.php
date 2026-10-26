@@ -1,8 +1,10 @@
 <?php
-
+// GANTI seluruh isi routes/web.php dengan ini
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\KeranjangController;
+use App\Http\Controllers\PesananController;
 use App\Http\Controllers\ProdukController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,10 +18,6 @@ Route::post('/keranjang/tambah', [KeranjangController::class, 'tambah'])->name('
 Route::post('/keranjang/ubah', [KeranjangController::class, 'ubah'])->name('keranjang.ubah');
 Route::delete('/keranjang/{produk}', [KeranjangController::class, 'hapus'])->name('keranjang.hapus');
 
-// Checkout: sementara placeholder, halamannya dibuat di tahap berikutnya
-Route::get('/checkout', fn () => redirect()->route('keranjang.index')->with('status', 'Halaman checkout sedang dikerjakan.'))
-    ->middleware('auth')->name('checkout.index');
-
 // Hanya untuk yang belum login
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -29,4 +27,15 @@ Route::middleware('guest')->group(function () {
 });
 
 // Hanya untuk yang sudah login
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::middleware('auth')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:10,1');
+
+    Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan.index');
+    Route::get('/pesanan/{pesanan}', [PesananController::class, 'show'])->name('pesanan.show');
+    Route::get('/pesanan/{pesanan}/bukti', [PesananController::class, 'bukti'])->name('pesanan.bukti');
+    Route::post('/pesanan/{pesanan}/bukti', [PesananController::class, 'uploadBukti'])
+        ->name('pesanan.bukti.simpan')->middleware('throttle:10,1');
+});
