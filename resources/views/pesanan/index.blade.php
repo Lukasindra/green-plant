@@ -3,7 +3,14 @@
 @section('judul', 'Pesanan Saya')
 
 @section('isi')
-<h1 class="mb-4 text-xl font-semibold">Pesanan Saya</h1>
+<div class="mb-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Pesanan Saya</h1>
+    <div class="text-sm">
+        <span class="border-b-2 border-brand-700 py-1 font-medium text-brand-700">Produk</span>
+        <span class="mx-1 text-gray-400">|</span>
+        <a href="{{ route('pesanan-jasa.index') }}" class="text-gray-500 hover:text-brand-700">Jasa</a>
+    </div>
+</div>
 
 @if ($pesanan->count())
     <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">

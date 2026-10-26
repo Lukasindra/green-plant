@@ -15,7 +15,7 @@
         $menu = [
             ['Beranda', url('/'), request()->is('/')],
             ['Produk', route('produk.index'), request()->routeIs('produk.*')],
-            ['Jasa', '#', false],
+            ['Jasa', route('jasa.index'), request()->routeIs('jasa.*')],
             ['Tentang Kami', '#', false],
         ];
     @endphp
