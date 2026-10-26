@@ -39,8 +39,12 @@
         </div>
         <div>
             <label for="satuan" class="block text-sm font-medium text-gray-700">Satuan <span class="text-red-600">*</span></label>
-            <input id="satuan" name="satuan" type="text" value="{{ old('satuan', $jasa?->satuan) }}" maxlength="30" required placeholder="mis. per kunjungan"
-                class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+            <select id="satuan" name="satuan" required
+                class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                @foreach (['paket' => 'paket', 'm2' => 'm2 (meter persegi)', 'kunjungan' => 'kunjungan'] as $kode => $label)
+                    <option value="{{ $kode }}" @selected(old('satuan', $jasa?->satuan) === $kode)>{{ $label }}</option>
+                @endforeach
+            </select>
             @error('satuan') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
         </div>
     </div>

@@ -84,7 +84,7 @@ class AdminJasaTest extends TestCase
             'nama' => 'Perawatan Rutin',
             'deskripsi' => 'Penyiraman dan pemupukan berkala.',
             'harga' => 75000,
-            'satuan' => 'per kunjungan',
+            'satuan' => 'kunjungan',
             'foto' => null,
         ]);
 
@@ -108,7 +108,7 @@ class AdminJasaTest extends TestCase
                 'kategori_id' => $categoryId,
                 'deskripsi' => 'Perawatan tanaman indoor lengkap.',
                 'harga' => 90000,
-                'satuan' => 'per kunjungan',
+                'satuan' => 'kunjungan',
             ])
             ->assertRedirect(route('admin.jasa.index'))
             ->assertSessionHas('status', 'Jasa berhasil diperbarui.');
@@ -117,7 +117,7 @@ class AdminJasaTest extends TestCase
             'id' => $serviceId,
             'nama' => 'Perawatan Premium',
             'harga' => 90000,
-            'satuan' => 'per kunjungan',
+            'satuan' => 'kunjungan',
         ]);
     }
 
@@ -133,21 +133,21 @@ class AdminJasaTest extends TestCase
             ->post(route('admin.jasa.store'), [
                 'nama' => 'Perawatan Rutin',
                 'harga' => 75000,
-                'satuan' => 'per kunjungan',
+                'satuan' => 'kunjungan',
             ])
             ->assertForbidden();
 
         $serviceId = DB::table('jasa')->insertGetId([
             'nama' => 'Perawatan Rutin',
             'harga' => 75000,
-            'satuan' => 'per kunjungan',
+            'satuan' => 'kunjungan',
         ]);
 
         $this->actingAs($customer)
             ->put(route('admin.jasa.update', $serviceId), [
                 'nama' => 'Perawatan Baru',
                 'harga' => 90000,
-                'satuan' => 'per kunjungan',
+                'satuan' => 'kunjungan',
             ])
             ->assertForbidden();
 
@@ -171,7 +171,7 @@ class AdminJasaTest extends TestCase
                 'kategori_id' => $categoryId,
                 'deskripsi' => 'Penyiraman dan pemupukan berkala.',
                 'harga' => 75000,
-                'satuan' => 'per kunjungan',
+                'satuan' => 'kunjungan',
                 'foto' => UploadedFile::fake()->image('perawatan.jpg'),
             ]);
 
@@ -182,7 +182,7 @@ class AdminJasaTest extends TestCase
         $this->assertNotNull($service);
         $this->assertSame($categoryId, $service->kategori_id);
         $this->assertSame(75000, $service->harga);
-        $this->assertSame('per kunjungan', $service->satuan);
+        $this->assertSame('kunjungan', $service->satuan);
         $this->assertNotEmpty($service->foto);
         $this->assertFileExists(public_path('images/jasa/'.$service->foto));
 
@@ -203,7 +203,7 @@ class AdminJasaTest extends TestCase
                 'nama' => 'Perawatan Rutin',
                 'kategori_id' => $categoryId,
                 'harga' => 75000,
-                'satuan' => 'per kunjungan',
+                'satuan' => 'kunjungan',
             ])
             ->assertRedirect(route('admin.jasa.create'))
             ->assertSessionHasErrors('kategori_id');
@@ -221,7 +221,7 @@ class AdminJasaTest extends TestCase
         $serviceId = DB::table('jasa')->insertGetId([
             'nama' => 'Jasa untuk dihapus',
             'harga' => 50000,
-            'satuan' => 'per kunjungan',
+            'satuan' => 'kunjungan',
             'foto' => $photoName,
         ]);
 
@@ -240,7 +240,7 @@ class AdminJasaTest extends TestCase
         $serviceId = DB::table('jasa')->insertGetId([
             'nama' => 'Jasa dalam pesanan',
             'harga' => 50000,
-            'satuan' => 'per kunjungan',
+            'satuan' => 'kunjungan',
         ]);
         DB::table('detail_pesanan_jasa')->insert(['jasa_id' => $serviceId]);
 

@@ -118,7 +118,8 @@ class JasaController extends Controller
             ],
             'deskripsi' => ['nullable', 'string', 'max:5000'],
             'harga' => ['required', 'integer', 'min:0', 'max:4294967295'],
-            'satuan' => ['required', 'string', 'max:30'],
+            // Nilai harus sesuai dengan constraint jasa_satuan_check dari basis data Supabase
+            'satuan' => ['required', 'string', Rule::in(['paket', 'm2', 'kunjungan'])],
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
 
@@ -128,7 +129,8 @@ class JasaController extends Controller
 
         return $request->validate($rules, [
             'kategori_id.exists' => 'Kategori yang dipilih bukan kategori jasa.',
-            'satuan.required' => 'Satuan wajib diisi, misalnya "per kunjungan".',
+            'satuan.required' => 'Satuan wajib dipilih.',
+            'satuan.in' => 'Satuan harus salah satu dari: paket, m2, atau kunjungan.',
             'foto.image' => 'File foto harus berupa gambar.',
             'foto.mimes' => 'Foto harus berformat JPG, PNG, atau WebP.',
             'foto.max' => 'Ukuran foto maksimal 2 MB.',
