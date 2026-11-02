@@ -8,10 +8,9 @@
             ? route('admin.pesanan.jasa.aksi', $pesanan)
             : route('admin.pesanan.produk.aksi', $pesanan);
 
-        $punyaStatusPesanan = isset($pesanan->status_pesanan);
-        $statusPesanan = $punyaStatusPesanan ? ($pesanan->status_pesanan ?? 'diproses') : 'diproses';
-        $lunas = in_array($pesanan->status_pembayaran, ['lunas', 'dibayar'], true);
-        $dibatalkan = $punyaStatusPesanan && $statusPesanan === 'dibatalkan';
+        $statusPesanan = $pesanan->status_pesanan;
+        $lunas = $pesanan->status_pembayaran === 'lunas';
+        $dibatalkan = $statusPesanan === 'dibatalkan';
     @endphp
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.95fr)]">
@@ -29,13 +28,7 @@
                 <dt class="text-gray-500">Metode</dt><dd>{{ config('toko.metode.'.$pesanan->metode_pembayaran, $pesanan->metode_pembayaran) }}</dd>
                 <dt class="text-gray-500">Pembayaran</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
                 <dt class="text-gray-500">Status</dt>
-                <dd>
-                    @if ($punyaStatusPesanan)
-                        <x-status-badge :nilai="$pesanan->status_pesanan" />
-                    @else
-                        <span class="text-gray-400">-</span>
-                    @endif
-                </dd>
+                <dd><x-status-badge :nilai="$pesanan->status_pesanan" /></dd>
 
                 @if ($tipe === 'produk')
                     <dt class="text-gray-500">Alamat kirim</dt><dd class="whitespace-pre-line">{{ $pesanan->alamat_pengiriman }}</dd>
@@ -63,9 +56,6 @@
 
             <dl class="mt-3 space-y-1 border-t border-gray-200 pt-3 text-sm">
                 <div class="flex justify-between"><dt>Subtotal</dt><dd>Rp {{ number_format($pesanan->detail->sum('subtotal'), 0, ',', '.') }}</dd></div>
-                @if ($tipe === 'produk')
-                    <div class="flex justify-between"><dt>Ongkir</dt><dd>Rp {{ number_format($pesanan->ongkir, 0, ',', '.') }}</dd></div>
-                @endif
                 <div class="flex justify-between pt-1 text-base font-semibold">
                     <dt>Total Pembayaran</dt><dd class="text-brand-700">Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</dd>
                 </div>
@@ -113,7 +103,7 @@
                         </form>
                     @endif
 
-                    @if ($tipe === 'produk' && $lunas && ! in_array($statusPesanan, ['dikirim', 'selesai'], true))
+                    @if ($tipe === 'produk' && $statusPesanan === 'dibayar')
                         <form method="POST" action="{{ $ruteAksi }}">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
@@ -122,7 +112,25 @@
                         </form>
                     @endif
 
-                    @if ($lunas && ! in_array($statusPesanan, ['selesai'], true) && ($tipe === 'jasa' || $statusPesanan === 'dikirim' || ! $punyaStatusPesanan))
+                    @if ($tipe === 'jasa' && $lunas && $statusPesanan === 'menunggu_konfirmasi')
+                        <form method="POST" action="{{ $ruteAksi }}">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="jadwalkan">
+                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Jadwalkan Pengerjaan</button>
+                        </form>
+                    @endif
+
+                    @if ($tipe === 'jasa' && $statusPesanan === 'dijadwalkan')
+                        <form method="POST" action="{{ $ruteAksi }}">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="kerjakan">
+                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Mulai Dikerjakan</button>
+                        </form>
+                    @endif
+
+                    @if (($tipe === 'produk' && $statusPesanan === 'dikirim') || ($tipe === 'jasa' && $statusPesanan === 'dikerjakan'))
                         <form method="POST" action="{{ $ruteAksi }}">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
@@ -131,7 +139,7 @@
                         </form>
                     @endif
 
-                    @if (! $lunas && $pesanan->status_pembayaran !== 'menunggu_verifikasi' && ! in_array($statusPesanan, ['dikirim', 'selesai'], true))
+                    @if (! $lunas && $pesanan->status_pembayaran !== 'menunggu_verifikasi' && in_array($statusPesanan, ['menunggu_pembayaran', 'menunggu_konfirmasi'], true))
                         <form method="POST" action="{{ $ruteAksi }}" onsubmit="return confirm('Yakin ingin membatalkan pesanan ini?')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">

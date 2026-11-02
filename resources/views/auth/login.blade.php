@@ -31,10 +31,6 @@
         @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
     </div>
 
-    <label class="flex items-center gap-2 text-sm text-gray-600">
-        <input type="checkbox" name="ingat" value="1" class="rounded border-gray-300 accent-brand-700"> Ingat saya
-    </label>
-
     <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Login</button>
 </form>
 

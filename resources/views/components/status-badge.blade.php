@@ -12,7 +12,6 @@
         'menunggu_konfirmasi'  => ['Menunggu konfirmasi',  'bg-blue-100 text-blue-800'],
         'dijadwalkan'          => ['Dijadwalkan',          'bg-indigo-100 text-indigo-800'],
         'dikerjakan'           => ['Dikerjakan',           'bg-blue-100 text-blue-800'],
-        'diproses'             => ['Diproses',             'bg-blue-100 text-blue-800'],
     ];
     [$label, $kelas] = $peta[$nilai] ?? [$nilai, 'bg-gray-100 text-gray-700'];
 @endphp

@@ -10,7 +10,6 @@ use App\Models\Produk;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -76,13 +75,7 @@ class DashboardController extends Controller
 
     private function pesananTerbaru(string $model, string $tipe): Collection
     {
-        $tabel = (new $model)->getTable();
-        $kolom = ['id', 'kode', 'customer_id', 'tanggal_pesan', 'total_bayar'];
-
-        // Kolom status ikut diambil kalau tabelnya punya
-        if (Schema::hasColumn($tabel, 'status_pesanan')) {
-            $kolom[] = 'status_pesanan';
-        }
+        $kolom = ['id', 'kode', 'customer_id', 'tanggal_pesan', 'total_bayar', 'status_pesanan'];
 
         return $model::query()
             ->with('customer.akun')
@@ -93,20 +86,13 @@ class DashboardController extends Controller
             ->map(fn ($pesanan): array => $this->formatPesanan($pesanan, $tipe));
     }
 
-    /**
-     * Pesanan dalam rentang tanggal yang sudah lunas.
-     * Kalau tabelnya belum punya kolom status_pembayaran, semua pesanan ikut dihitung.
-     */
+    /** Pesanan dalam rentang tanggal yang sudah lunas. */
     private function pesananBerbayar(string $model, CarbonImmutable $dari, CarbonImmutable $sampai): Collection
     {
-        $query = $model::query()
-            ->whereBetween('tanggal_pesan', [$dari->toDateString(), $sampai->toDateString()]);
-
-        if (Schema::hasColumn((new $model)->getTable(), 'status_pembayaran')) {
-            $query->where('status_pembayaran', 'lunas');
-        }
-
-        return $query->get(['tanggal_pesan', 'total_bayar']);
+        return $model::query()
+            ->whereBetween('tanggal_pesan', [$dari->toDateString(), $sampai->toDateString()])
+            ->where('status_pembayaran', 'lunas')
+            ->get(['tanggal_pesan', 'total_bayar']);
     }
 
     /**
@@ -120,7 +106,7 @@ class DashboardController extends Controller
             'tipe' => $tipe,
             'tanggal' => CarbonImmutable::parse($pesanan->tanggal_pesan),
             'nilai' => (int) $pesanan->total_bayar,
-            'status' => $pesanan->status_pesanan ?? null,
+            'status' => $pesanan->status_pesanan,
         ];
     }
 }

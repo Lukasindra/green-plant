@@ -11,7 +11,7 @@
         ];
         $formatUang = fn ($nilai) => 'Rp ' . number_format((float) $nilai, 0, ',', '.');
         $statusBadge = [
-            'diproses' => ['Menunggu Kirim', 'bg-amber-100 text-amber-800'],
+            'dibayar' => ['Menunggu Kirim', 'bg-amber-100 text-amber-800'],
             'dikirim' => ['Dikirim', 'bg-sky-100 text-sky-800'],
             'selesai' => ['Selesai', 'bg-emerald-100 text-emerald-800'],
         ];
@@ -47,13 +47,13 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse ($pesanan as $item)
                             @php
-                                [$teksStatus, $kelasStatus] = $statusBadge[$item->status_pesanan ?? 'diproses'] ?? ['', ''];
+                                [$teksStatus, $kelasStatus] = $statusBadge[$item->status_pesanan] ?? ['', ''];
                             @endphp
                             <tr>
                                 <td class="px-5 py-4 align-top">
                                     <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
                                     <span class="mt-1 block text-xs text-gray-500">{{ $item->customer?->akun?->nama ?? 'Tanpa nama' }}</span>
-                                    <span class="mt-1 block"><x-status-badge :nilai="$item->status_pesanan ?? 'diproses'" /></span>
+                                    <span class="mt-1 block"><x-status-badge :nilai="$item->status_pesanan" /></span>
                                 </td>
                                 <td class="max-w-[16rem] px-3 py-4 align-top text-gray-600">
                                     {{ $item->alamat_pengiriman ?: 'Tanpa alamat' }}

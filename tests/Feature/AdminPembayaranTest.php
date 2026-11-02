@@ -7,83 +7,18 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\MembuatSkemaErd;
 use Tests\TestCase;
 
 class AdminPembayaranTest extends TestCase
 {
+    use MembuatSkemaErd;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Schema::create('akun', function (Blueprint $table): void {
-            $table->id();
-            $table->string('nama');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('no_hp')->nullable();
-            $table->string('role');
-            $table->string('remember_token')->nullable();
-        });
-
-        Schema::create('customer', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('akun_id');
-        });
-
-        Schema::create('karyawan', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('akun_id');
-            $table->string('username');
-        });
-
-        Schema::create('pesanan_produk', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_pengiriman');
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
-
-        Schema::create('pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_lokasi');
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
-
-        Schema::create('detail_pesanan_produk', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('pesanan_produk_id');
-            $table->unsignedBigInteger('produk_id')->nullable();
-            $table->unsignedInteger('qty')->default(1);
-            $table->unsignedInteger('harga')->default(0);
-            $table->unsignedInteger('subtotal')->default(0);
-        });
-
-        Schema::create('detail_pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('pesanan_jasa_id');
-            $table->unsignedBigInteger('jasa_id')->nullable();
-            $table->unsignedInteger('qty')->default(1);
-            $table->unsignedInteger('harga')->default(0);
-            $table->unsignedInteger('subtotal')->default(0);
-        });
+        $this->buatSkemaErd();
     }
 
     public function test_guests_are_redirected_to_login(): void
@@ -204,7 +139,6 @@ class AdminPembayaranTest extends TestCase
             'metode_pembayaran' => 'transfer',
             'alamat_pengiriman' => 'Jl. Melati 8',
             'total_bayar' => $total,
-            'ongkir' => 15000,
         ], $tambahan));
     }
 

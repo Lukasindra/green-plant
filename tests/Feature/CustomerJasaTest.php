@@ -10,72 +10,18 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\MembuatSkemaErd;
 use Tests\TestCase;
 
 class CustomerJasaTest extends TestCase
 {
+    use MembuatSkemaErd;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Schema::create('akun', function (Blueprint $table): void {
-            $table->id();
-            $table->string('nama');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('no_hp')->nullable();
-            $table->string('role');
-            $table->string('remember_token')->nullable();
-        });
-
-        Schema::create('customer', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('akun_id')->constrained('akun')->cascadeOnDelete();
-            $table->text('alamat');
-        });
-
-        Schema::create('kategori', function (Blueprint $table): void {
-            $table->id();
-            $table->string('nama');
-            $table->string('tipe');
-        });
-
-        Schema::create('jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('kategori_id')->nullable();
-            $table->string('nama');
-            $table->text('deskripsi')->nullable();
-            $table->decimal('harga', 12, 0);
-            $table->string('satuan');
-            $table->string('foto')->nullable();
-        });
-
-        Schema::create('pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode', 20)->unique();
-            $table->foreignId('customer_id')->constrained('customer')->cascadeOnDelete();
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->decimal('total_bayar', 12, 0);
-            $table->string('metode_pembayaran', 10);
-            $table->string('status_pembayaran', 20)->default('menunggu_bayar');
-            $table->string('status_pesanan', 20)->default('menunggu_konfirmasi');
-            $table->text('alamat_lokasi');
-            $table->datetime('jadwal_pengerjaan')->nullable();
-            $table->datetime('tanggal_selesai')->nullable();
-            $table->text('catatan')->nullable();
-            $table->string('bukti_bayar')->nullable();
-            $table->date('tanggal_bayar')->nullable();
-        });
-
-        Schema::create('detail_pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('pesanan_jasa_id')->constrained('pesanan_jasa')->cascadeOnDelete();
-            $table->foreignId('jasa_id')->constrained('jasa')->cascadeOnDelete();
-            $table->integer('qty');
-            $table->decimal('harga', 12, 0);
-            $table->decimal('subtotal', 12, 0);
-        });
+        $this->buatSkemaErd();
     }
 
     private function createAccount(string $nama, string $role, string $email = null): Akun
@@ -98,11 +44,13 @@ class CustomerJasaTest extends TestCase
     private function buatJasa(array $data = []): Jasa
     {
         $jasa = new Jasa();
-        $jasa->kategori_id = null;
+        // Sesuai ERD: jasa wajib punya kategori bertipe 'jasa'
+        $jasa->kategori_id = DB::table('kategori')->where('nama', 'Perawatan Taman')->where('tipe', 'jasa')->value('id')
+            ?? DB::table('kategori')->insertGetId(['nama' => 'Perawatan Taman', 'tipe' => 'jasa']);
         $jasa->nama        = 'Perawatan Taman Bulanan';
         $jasa->deskripsi   = 'Pangkas rumpun, pupuk, dan atur ulang tanaman hias.';
         $jasa->harga       = 150000;
-        $jasa->satuan      = 'sesi';
+        $jasa->satuan      = 'kunjungan';   // sesuai ERD: paket | m2 | kunjungan
         $jasa->forceFill($data)->save();
 
         return $jasa;

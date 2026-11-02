@@ -2,16 +2,27 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\StokTidakCukupException;
 use App\Http\Controllers\Controller;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
+use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
+/*
+ * Alur status (sesuai CHECK pada tabel di database):
+ *
+ * pesanan_produk.status_pembayaran : menunggu_bayar -> menunggu_verifikasi -> lunas
+ * pesanan_produk.status_pesanan    : menunggu_pembayaran -> dibayar -> dikirim -> selesai  (atau dibatalkan)
+ *
+ * pesanan_jasa.status_pembayaran   : menunggu_bayar -> menunggu_verifikasi -> lunas
+ * pesanan_jasa.status_pesanan      : menunggu_konfirmasi -> dijadwalkan -> dikerjakan -> selesai  (atau dibatalkan)
+ */
 class PesananController extends Controller
 {
     public function index(Request $request): View
@@ -117,13 +128,8 @@ class PesananController extends Controller
 
             if (in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas'], true)) {
                 $query->where('status_pembayaran', $status);
-            } elseif (in_array($status, ['dikirim', 'selesai', 'dibatalkan'], true)) {
-                if (Schema::hasColumn((new $model)->getTable(), 'status_pesanan')) {
-                    $query->where('status_pesanan', $status);
-                } else {
-                    // Tabel tidak punya kolom status pesanan: hasil kosong
-                    $query->whereRaw('1 = 0');
-                }
+            } elseif ($status !== null) {
+                $query->where('status_pesanan', $status);
             }
 
             $hasil = $hasil->merge(
@@ -139,50 +145,57 @@ class PesananController extends Controller
     private function terapkanAksi(Request $request, $pesanan, string $tipe): RedirectResponse
     {
         $aksi = $request->input('aksi');
-        $punyaStatusPesanan = Schema::hasColumn($pesanan->getTable(), 'status_pesanan');
-        $statusPesanan = $punyaStatusPesanan ? ($pesanan->status_pesanan ?? 'diproses') : 'diproses';
-        $lunas = in_array($pesanan->status_pembayaran, ['lunas', 'dibayar'], true);
-        $dibatalkan = $punyaStatusPesanan && $statusPesanan === 'dibatalkan';
 
-        if ($dibatalkan) {
+        if ($pesanan->status_pesanan === 'dibatalkan') {
             return $this->kembali($request, $tipe, $pesanan, 'Pesanan sudah dibatalkan dan tidak dapat diproses lagi.', 'error');
         }
 
-        $pesan = match ($aksi) {
-            'verifikasi_bayar' => $this->aksiBayar($pesanan, true),
-            'tolak_bayar' => $this->aksiBayar($pesanan, false),
-            'konfirmasi_cod' => $this->aksiCod($pesanan),
-            'dikirim' => $tipe === 'produk'
-                ? $this->aksiDikirim($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan)
-                : null,
-            'selesai' => $this->aksiSelesai($pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
-            'batalkan' => $this->aksiBatalkan($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan),
-            default => null,
-        };
+        try {
+            $pesan = DB::transaction(function () use ($aksi, $pesanan, $tipe, $request) {
+                $pesan = match ($aksi) {
+                    'verifikasi_bayar' => $this->aksiBayar($pesanan, $tipe, true),
+                    'tolak_bayar' => $this->aksiBayar($pesanan, $tipe, false),
+                    'konfirmasi_cod' => $this->aksiCod($pesanan, $tipe),
+                    'dikirim' => $tipe === 'produk' ? $this->aksiDikirim($pesanan) : null,
+                    'jadwalkan' => $tipe === 'jasa' ? $this->aksiJadwalkan($pesanan) : null,
+                    'kerjakan' => $tipe === 'jasa' ? $this->aksiKerjakan($pesanan) : null,
+                    'selesai' => $this->aksiSelesai($pesanan, $tipe),
+                    'batalkan' => $this->aksiBatalkan($pesanan),
+                    default => null,
+                };
+
+                if ($pesan === null) {
+                    return null;
+                }
+
+                // Catat admin yang memproses (kolom admin_id mengacu ke karyawan.id)
+                if ($request->user()?->karyawan) {
+                    $pesanan->admin_id = $request->user()->karyawan->id;
+                }
+
+                $pesanan->save();
+
+                return $pesan;
+            });
+        } catch (StokTidakCukupException $e) {
+            return $this->kembali($request, $tipe, $pesanan, $e->getMessage(), 'error');
+        }
 
         if (! $pesan) {
             return $this->kembali($request, $tipe, $pesanan, 'Aksi tidak dapat diterapkan pada status pesanan ini.', 'error');
         }
 
-        // Catat admin yang memproses bila struktur data mendukung
-        if (Schema::hasColumn($pesanan->getTable(), 'admin_id') && $request->user()?->karyawan) {
-            $pesanan->admin_id = $request->user()->karyawan->id;
-        }
-
-        $pesanan->save();
-
         return $this->kembali($request, $tipe, $pesanan, $pesan, 'status');
     }
 
-    private function aksiBayar($pesanan, bool $terima): ?string
+    private function aksiBayar($pesanan, string $tipe, bool $terima): ?string
     {
         if ($pesanan->status_pembayaran !== 'menunggu_verifikasi') {
             return null;
         }
 
         if ($terima) {
-            $pesanan->status_pembayaran = 'lunas';
-            $pesanan->tanggal_bayar = now()->toDateString();
+            $this->tandaiLunas($pesanan, $tipe);
 
             return 'Pembayaran berhasil diverifikasi.';
         }
@@ -192,61 +205,110 @@ class PesananController extends Controller
         return 'Bukti bayar ditolak. Pesanan kembali menunggu pembayaran.';
     }
 
-    private function aksiCod($pesanan): ?string
+    private function aksiCod($pesanan, string $tipe): ?string
     {
         if ($pesanan->metode_pembayaran !== 'cod' || $pesanan->status_pembayaran !== 'menunggu_bayar') {
             return null;
         }
 
-        $pesanan->status_pembayaran = 'lunas';
-        $pesanan->tanggal_bayar = now()->toDateString();
+        $this->tandaiLunas($pesanan, $tipe);
 
         return 'Pembayaran COD berhasil dikonfirmasi.';
     }
 
-    private function aksiDikirim($pesanan, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    // Pembayaran lunas. Pesanan produk lanjut ke 'dibayar' dan stok dikurangi.
+    // Pesanan jasa tetap 'menunggu_konfirmasi' sampai admin menjadwalkan.
+    private function tandaiLunas($pesanan, string $tipe): void
     {
-        if (! $lunas || in_array($statusPesanan, ['dikirim', 'selesai'], true)) {
+        $pesanan->status_pembayaran = 'lunas';
+        $pesanan->tanggal_bayar = now()->toDateString();
+
+        if ($tipe === 'produk') {
+            $this->kurangiStok($pesanan);
+            $pesanan->status_pesanan = 'dibayar';
+        }
+    }
+
+    // Stok dikurangi saat pembayaran lunas. Baris produk dikunci agar dua pembayaran
+    // yang bersamaan tidak membuat stok minus.
+    private function kurangiStok(PesananProduk $pesanan): void
+    {
+        $pesanan->loadMissing('detail');
+
+        foreach ($pesanan->detail as $d) {
+            $produk = Produk::query()->lockForUpdate()->find($d->produk_id);
+
+            if (! $produk || $produk->stok < $d->qty) {
+                $nama = $produk?->nama ?? 'produk';
+                throw new StokTidakCukupException("Stok {$nama} tidak mencukupi. Pembayaran belum dikonfirmasi.");
+            }
+
+            $produk->stok -= $d->qty;
+            $produk->save();
+        }
+    }
+
+    private function aksiDikirim(PesananProduk $pesanan): ?string
+    {
+        if ($pesanan->status_pesanan !== 'dibayar') {
             return null;
         }
 
-        if ($punyaStatusPesanan) {
-            $pesanan->status_pesanan = 'dikirim';
-        }
+        $pesanan->status_pesanan = 'dikirim';
         $pesanan->tanggal_kirim = now()->toDateString();
 
         return 'Pesanan ditandai sudah dikirim.';
     }
 
-    private function aksiSelesai($pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    private function aksiJadwalkan(PesananJasa $pesanan): ?string
     {
-        $siap = $tipe === 'jasa'
-            ? $lunas
-            : $lunas && $statusPesanan === 'dikirim';
-
-        if (! $siap || $statusPesanan === 'selesai') {
+        if ($pesanan->status_pembayaran !== 'lunas' || $pesanan->status_pesanan !== 'menunggu_konfirmasi') {
             return null;
         }
 
-        if ($punyaStatusPesanan) {
-            $pesanan->status_pesanan = 'selesai';
+        $pesanan->status_pesanan = 'dijadwalkan';
+
+        return 'Pesanan jasa dijadwalkan.';
+    }
+
+    private function aksiKerjakan(PesananJasa $pesanan): ?string
+    {
+        if ($pesanan->status_pesanan !== 'dijadwalkan') {
+            return null;
         }
-        if (Schema::hasColumn($pesanan->getTable(), 'tanggal_selesai')) {
+
+        $pesanan->status_pesanan = 'dikerjakan';
+
+        return 'Pengerjaan jasa dimulai.';
+    }
+
+    private function aksiSelesai($pesanan, string $tipe): ?string
+    {
+        $prasyarat = $tipe === 'jasa' ? 'dikerjakan' : 'dikirim';
+
+        if ($pesanan->status_pesanan !== $prasyarat) {
+            return null;
+        }
+
+        $pesanan->status_pesanan = 'selesai';
+
+        if ($tipe === 'jasa') {
             $pesanan->tanggal_selesai = now();
         }
 
         return 'Pesanan ditandai selesai.';
     }
 
-    private function aksiBatalkan($pesanan, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    // Hanya pesanan yang belum dibayar sama sekali yang boleh dibatalkan.
+    private function aksiBatalkan($pesanan): ?string
     {
-        if ($lunas || $pesanan->status_pembayaran === 'menunggu_verifikasi' || in_array($statusPesanan, ['dikirim', 'selesai'], true)) {
+        $belumDibayar = in_array($pesanan->status_pesanan, ['menunggu_pembayaran', 'menunggu_konfirmasi'], true);
+
+        if ($pesanan->status_pembayaran === 'lunas' || $pesanan->status_pembayaran === 'menunggu_verifikasi' || ! $belumDibayar) {
             return null;
         }
 
-        if ($punyaStatusPesanan) {
-            $pesanan->status_pesanan = 'dibatalkan';
-        }
+        $pesanan->status_pesanan = 'dibatalkan';
 
         return 'Pesanan berhasil dibatalkan.';
     }

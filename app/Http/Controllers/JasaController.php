@@ -53,7 +53,7 @@ class JasaController extends Controller
             'jadwal'            => ['required', 'date', 'after_or_equal:today'],
             'alamat_lokasi'     => ['required', 'string', 'max:500'],
             'catatan'           => ['nullable', 'string', 'max:500'],
-            'metode_pembayaran' => ['required', 'in:transfer,qris,ewallet,cod'],
+            'metode_pembayaran' => ['required', 'in:transfer,qris,cod'],
         ], [
             'qty.required'               => 'Jumlah pengerjaan wajib diisi.',
             'qty.min'                    => 'Jumlah pengerjaan minimal 1.',

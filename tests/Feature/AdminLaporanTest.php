@@ -7,57 +7,18 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\MembuatSkemaErd;
 use Tests\TestCase;
 
 class AdminLaporanTest extends TestCase
 {
+    use MembuatSkemaErd;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Schema::create('akun', function (Blueprint $table): void {
-            $table->id();
-            $table->string('nama');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('no_hp')->nullable();
-            $table->string('role');
-            $table->string('remember_token')->nullable();
-        });
-
-        Schema::create('pesanan_produk', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->unsignedBigInteger('kurir_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->date('tanggal_kirim')->nullable();
-            $table->timestamp('tanggal_selesai')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_pengiriman');
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
-
-        Schema::create('pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_lokasi');
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
+        $this->buatSkemaErd();
     }
 
     public function test_guests_are_redirected_to_login(): void
@@ -150,7 +111,6 @@ class AdminLaporanTest extends TestCase
             'metode_pembayaran' => 'transfer',
             'alamat_pengiriman' => 'Jl. Melati 8',
             'total_bayar' => $total,
-            'ongkir' => 15000,
         ], $tambahan));
     }
 

@@ -1,7 +1,6 @@
 ﻿<?php
 use App\Http\Controllers\Admin\JasaController as AdminJasaController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
-use App\Http\Controllers\Admin\PengaturanController as AdminPengaturanController;
 use App\Http\Controllers\Admin\PenggunaController as AdminPenggunaController;
 use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Admin\PengirimanController as AdminPengirimanController;
@@ -65,10 +64,6 @@ Route::post('/admin/pengguna', [AdminPenggunaController::class, 'store'])->middl
 Route::get('/admin/pengguna/{pengguna}/edit', [AdminPenggunaController::class, 'edit'])->middleware('auth')->name('admin.pengguna.edit');
 Route::put('/admin/pengguna/{pengguna}', [AdminPenggunaController::class, 'update'])->middleware('auth')->name('admin.pengguna.update');
 Route::delete('/admin/pengguna/{pengguna}', [AdminPenggunaController::class, 'destroy'])->middleware('auth')->name('admin.pengguna.destroy');
-
-// Pengaturan (admin): ongkir, rekening transfer & e-wallet toko
-Route::get('/admin/pengaturan', [AdminPengaturanController::class, 'index'])->middleware('auth')->name('admin.pengaturan.index');
-Route::put('/admin/pengaturan', [AdminPengaturanController::class, 'simpan'])->middleware('auth')->name('admin.pengaturan.simpan');
 
 // Keranjang (session, boleh tanpa login)
 Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang.index');

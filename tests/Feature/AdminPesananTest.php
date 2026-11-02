@@ -3,90 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\Akun;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\MembuatSkemaErd;
 use Tests\TestCase;
 
 class AdminPesananTest extends TestCase
 {
+    use MembuatSkemaErd;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        Schema::create('akun', function (Blueprint $table): void {
-            $table->id();
-            $table->string('nama');
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->string('no_hp')->nullable();
-            $table->string('role');
-            $table->string('remember_token')->nullable();
-        });
-
-        Schema::create('customer', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('akun_id');
-            $table->string('alamat')->nullable();
-        });
-
-        Schema::create('karyawan', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('akun_id');
-            $table->string('username');
-        });
-
-        Schema::create('pesanan_produk', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->date('tanggal_kirim')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_pengiriman');
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
-
-        Schema::create('pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->string('kode')->unique();
-            $table->unsignedBigInteger('customer_id');
-            $table->unsignedBigInteger('admin_id')->nullable();
-            $table->date('tanggal_pesan');
-            $table->date('tanggal_bayar')->nullable();
-            $table->string('metode_pembayaran');
-            $table->string('alamat_lokasi');
-            $table->text('catatan')->nullable();
-            $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
-            $table->string('status_pesanan')->default('diproses');
-            $table->string('bukti_bayar')->nullable();
-        });
-
-        Schema::create('detail_pesanan_produk', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('pesanan_produk_id');
-            $table->unsignedBigInteger('produk_id')->nullable();
-            $table->unsignedInteger('qty')->default(1);
-            $table->unsignedInteger('harga')->default(0);
-            $table->unsignedInteger('subtotal')->default(0);
-        });
-
-        Schema::create('detail_pesanan_jasa', function (Blueprint $table): void {
-            $table->id();
-            $table->unsignedBigInteger('pesanan_jasa_id');
-            $table->unsignedBigInteger('jasa_id')->nullable();
-            $table->unsignedInteger('qty')->default(1);
-            $table->unsignedInteger('harga')->default(0);
-            $table->unsignedInteger('subtotal')->default(0);
-        });
+        $this->buatSkemaErd();
     }
 
     public function test_guests_are_redirected_to_login(): void
@@ -137,14 +67,15 @@ class AdminPesananTest extends TestCase
             ->assertDontSee('PSN-J-002');
     }
 
-    public function test_admin_can_verify_upload_payment_proof_for_product_order(): void
+    public function test_verifying_payment_of_product_order_marks_it_paid_and_reduces_stock(): void
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Andi Wijaya');
+        $produkId = $this->buatProduk(10);
         $id = $this->buatPesananProduk($customer, 'PSN-P-003', 45000, [
             'status_pembayaran' => 'menunggu_verifikasi',
             'bukti_bayar' => 'bukti-bayar/fake.png',
-        ]);
+        ], $produkId, 2);
 
         $this->actingAs($admin)
             ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'verifikasi_bayar'])
@@ -154,9 +85,54 @@ class AdminPesananTest extends TestCase
         $this->assertDatabaseHas('pesanan_produk', [
             'id' => $id,
             'status_pembayaran' => 'lunas',
+            'status_pesanan' => 'dibayar',
             'admin_id' => null,
         ]);
         $this->assertNotNull(DB::table('pesanan_produk')->find($id)->tanggal_bayar);
+        $this->assertSame(8, (int) DB::table('produk')->where('id', $produkId)->value('stok'));
+    }
+
+    public function test_payment_is_not_verified_when_stock_is_insufficient(): void
+    {
+        $admin = $this->createAccount('Admin Green Plant', 'admin');
+        [$customer] = $this->buatCustomer('Lina Marlina');
+        $produkId = $this->buatProduk(1);
+        $id = $this->buatPesananProduk($customer, 'PSN-P-008', 45000, [
+            'status_pembayaran' => 'menunggu_verifikasi',
+            'bukti_bayar' => 'bukti-bayar/fake.png',
+        ], $produkId, 2);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'verifikasi_bayar'])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('pesanan_produk', [
+            'id' => $id,
+            'status_pembayaran' => 'menunggu_verifikasi',
+            'status_pesanan' => 'menunggu_pembayaran',
+        ]);
+        $this->assertSame(1, (int) DB::table('produk')->where('id', $produkId)->value('stok'));
+    }
+
+    public function test_admin_can_confirm_cod_for_product_order(): void
+    {
+        $admin = $this->createAccount('Admin Green Plant', 'admin');
+        [$customer] = $this->buatCustomer('Hari Susanto');
+        $produkId = $this->buatProduk(5);
+        $id = $this->buatPesananProduk($customer, 'PSN-P-009', 30000, [
+            'metode_pembayaran' => 'cod',
+        ], $produkId, 3);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'konfirmasi_cod'])
+            ->assertSessionHas('status', 'Pembayaran COD berhasil dikonfirmasi.');
+
+        $this->assertDatabaseHas('pesanan_produk', [
+            'id' => $id,
+            'status_pembayaran' => 'lunas',
+            'status_pesanan' => 'dibayar',
+        ]);
+        $this->assertSame(2, (int) DB::table('produk')->where('id', $produkId)->value('stok'));
     }
 
     public function test_admin_can_reject_upload_payment_proof(): void
@@ -185,6 +161,7 @@ class AdminPesananTest extends TestCase
         [$customer] = $this->buatCustomer('Tono Hartanto');
         $id = $this->buatPesananProduk($customer, 'PSN-P-004', 120000, [
             'status_pembayaran' => 'lunas',
+            'status_pesanan' => 'dibayar',
         ]);
 
         $this->actingAs($admin)
@@ -195,6 +172,7 @@ class AdminPesananTest extends TestCase
             'id' => $id,
             'status_pesanan' => 'dikirim',
         ]);
+        $this->assertNotNull(DB::table('pesanan_produk')->find($id)->tanggal_kirim);
 
         $this->actingAs($admin)
             ->post(route('admin.pesanan.produk.aksi', $id), ['dari' => 'detail', 'aksi' => 'selesai'])
@@ -207,7 +185,7 @@ class AdminPesananTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_finish_a_paid_service_order(): void
+    public function test_service_order_goes_through_scheduled_in_progress_and_finished(): void
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Gita Maharani');
@@ -215,14 +193,39 @@ class AdminPesananTest extends TestCase
             'status_pembayaran' => 'lunas',
         ]);
 
+        // Belum dijadwalkan: tidak bisa langsung selesai
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'selesai'])
+            ->assertSessionHas('error');
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'jadwalkan'])
+            ->assertSessionHas('status', 'Pesanan jasa dijadwalkan.');
+        $this->assertDatabaseHas('pesanan_jasa', ['id' => $id, 'status_pesanan' => 'dijadwalkan']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'kerjakan'])
+            ->assertSessionHas('status', 'Pengerjaan jasa dimulai.');
+        $this->assertDatabaseHas('pesanan_jasa', ['id' => $id, 'status_pesanan' => 'dikerjakan']);
+
         $this->actingAs($admin)
             ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'selesai'])
             ->assertSessionHas('status', 'Pesanan ditandai selesai.');
+        $this->assertDatabaseHas('pesanan_jasa', ['id' => $id, 'status_pesanan' => 'selesai']);
+        $this->assertNotNull(DB::table('pesanan_jasa')->find($id)->tanggal_selesai);
+    }
 
-        $this->assertDatabaseHas('pesanan_jasa', [
-            'id' => $id,
-            'status_pesanan' => 'selesai',
-        ]);
+    public function test_unpaid_service_order_cannot_be_scheduled(): void
+    {
+        $admin = $this->createAccount('Admin Green Plant', 'admin');
+        [$customer] = $this->buatCustomer('Nia Ramadhani');
+        $id = $this->buatPesananJasa($customer, 'PSN-J-005', 50000);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'jadwalkan'])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('pesanan_jasa', ['id' => $id, 'status_pesanan' => 'menunggu_konfirmasi']);
     }
 
     public function test_admin_cannot_ship_an_unpaid_order_or_cancel_a_paid_one(): void
@@ -234,6 +237,7 @@ class AdminPesananTest extends TestCase
         ]);
         $lunas = $this->buatPesananProduk($customer, 'PSN-P-006', 46000, [
             'status_pembayaran' => 'lunas',
+            'status_pesanan' => 'dibayar',
         ]);
 
         $this->actingAs($admin)
@@ -242,7 +246,7 @@ class AdminPesananTest extends TestCase
 
         $this->assertDatabaseHas('pesanan_produk', [
             'id' => $belumLunas,
-            'status_pesanan' => 'diproses',
+            'status_pesanan' => 'menunggu_pembayaran',
         ]);
 
         $this->actingAs($admin)
@@ -253,6 +257,19 @@ class AdminPesananTest extends TestCase
             'id' => $lunas,
             'status_pesanan' => 'dibatalkan',
         ]);
+    }
+
+    public function test_admin_can_cancel_an_unpaid_order(): void
+    {
+        $admin = $this->createAccount('Admin Green Plant', 'admin');
+        [$customer] = $this->buatCustomer('Yuni Astuti');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-010', 25000);
+
+        $this->actingAs($admin)
+            ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'batalkan'])
+            ->assertSessionHas('status', 'Pesanan berhasil dibatalkan.');
+
+        $this->assertDatabaseHas('pesanan_produk', ['id' => $id, 'status_pesanan' => 'dibatalkan']);
     }
 
     public function test_admin_cannot_access_order_details_for_non_admin_actions(): void
@@ -271,13 +288,13 @@ class AdminPesananTest extends TestCase
     }
 
     /**
-     * @return array<int, mixed> Simulasi DB table rows
+     * @return array<int, int> [customer_id, akun_id]
      */
     private function buatCustomer(string $nama): array
     {
         $akunId = DB::table('akun')->insertGetId([
             'nama' => $nama,
-            'email' => strtolower(str_replace([' ', '.'], ['.', '.'], $nama)).'@example.test',
+            'email' => strtolower(str_replace(' ', '.', $nama)).'@example.test',
             'password' => Hash::make('password'),
             'role' => 'customer',
         ]);
@@ -286,8 +303,23 @@ class AdminPesananTest extends TestCase
         return [$customerId, $akunId];
     }
 
-    private function buatPesananProduk(int $customerId, string $kode, int $total, array $tambahan = []): int
+    private function buatProduk(int $stok): int
     {
+        $kategoriId = DB::table('kategori')->where('nama', 'Pot')->where('tipe', 'produk')->value('id')
+            ?? DB::table('kategori')->insertGetId(['nama' => 'Pot', 'tipe' => 'produk']);
+
+        return DB::table('produk')->insertGetId([
+            'kategori_id' => $kategoriId,
+            'nama' => 'Pot Tanah Liat '.uniqid(),
+            'harga' => 20000,
+            'stok' => $stok,
+        ]);
+    }
+
+    private function buatPesananProduk(int $customerId, string $kode, int $total, array $tambahan = [], ?int $produkId = null, int $qty = 2): int
+    {
+        $produkId ??= $this->buatProduk(10);
+
         $id = DB::table('pesanan_produk')->insertGetId(array_merge([
             'kode' => $kode,
             'customer_id' => $customerId,
@@ -295,14 +327,13 @@ class AdminPesananTest extends TestCase
             'metode_pembayaran' => 'transfer',
             'alamat_pengiriman' => 'Jl. Kenanga 2',
             'total_bayar' => $total,
-            'ongkir' => 15000,
         ], $tambahan));
 
         DB::table('detail_pesanan_produk')->insert([
             'pesanan_produk_id' => $id,
-            'produk_id' => null,
-            'qty' => 2,
-            'harga' => intdiv($total, 2),
+            'produk_id' => $produkId,
+            'qty' => $qty,
+            'harga' => intdiv($total, $qty),
             'subtotal' => $total,
         ]);
 
@@ -311,6 +342,15 @@ class AdminPesananTest extends TestCase
 
     private function buatPesananJasa(int $customerId, string $kode, int $total, array $tambahan = []): int
     {
+        $kategoriId = DB::table('kategori')->where('nama', 'Perawatan Taman')->where('tipe', 'jasa')->value('id')
+            ?? DB::table('kategori')->insertGetId(['nama' => 'Perawatan Taman', 'tipe' => 'jasa']);
+        $jasaId = DB::table('jasa')->insertGetId([
+            'kategori_id' => $kategoriId,
+            'nama' => 'Perawatan '.uniqid(),
+            'harga' => $total,
+            'satuan' => 'paket',
+        ]);
+
         $id = DB::table('pesanan_jasa')->insertGetId(array_merge([
             'kode' => $kode,
             'customer_id' => $customerId,
@@ -322,7 +362,7 @@ class AdminPesananTest extends TestCase
 
         DB::table('detail_pesanan_jasa')->insert([
             'pesanan_jasa_id' => $id,
-            'jasa_id' => null,
+            'jasa_id' => $jasaId,
             'qty' => 1,
             'harga' => $total,
             'subtotal' => $total,

@@ -19,7 +19,6 @@
             ['Pengiriman', 'admin.pengiriman.index', '⇢', 'admin.pengiriman.*'],
             ['Laporan', 'admin.laporan.index', '▥', 'admin.laporan.*'],
             ['Pengguna', 'admin.pengguna.index', '☺', 'admin.pengguna.*'],
-            ['Pengaturan', 'admin.pengaturan.index', '⚙', 'admin.pengaturan.*'],
         ];
     @endphp
 

@@ -33,7 +33,6 @@
 
         <dl class="mt-3 space-y-1 border-t border-gray-200 pt-3 text-sm">
             <div class="flex justify-between"><dt>Subtotal</dt><dd>Rp {{ number_format($pesanan->detail->sum('subtotal'), 0, ',', '.') }}</dd></div>
-            <div class="flex justify-between"><dt>Ongkir</dt><dd>Rp {{ number_format($pesanan->ongkir, 0, ',', '.') }}</dd></div>
             <div class="flex justify-between pt-1 text-base font-semibold">
                 <dt>Total Pembayaran</dt><dd class="text-brand-700">Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</dd>
             </div>
@@ -55,15 +54,6 @@
                     <ul class="space-y-1 text-sm">
                         @foreach (config('toko.rekening') as $r)
                             <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $r['bank'] }}</strong> {{ $r['nomor'] }} a.n. {{ $r['nama'] }}</li>
-                        @endforeach
-                    </ul>
-                    @break
-
-                @case('ewallet')
-                    <p class="mb-2 text-sm">Kirim <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu e-wallet:</p>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.ewallet') as $e)
-                            <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $e['nama'] }}</strong> {{ $e['nomor'] }}</li>
                         @endforeach
                     </ul>
                     @break

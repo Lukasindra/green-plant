@@ -15,11 +15,17 @@ class Akun extends Authenticatable
 
     // 'role' sengaja TIDAK di fillable agar tidak bisa diubah lewat input user
     protected $fillable = ['nama', 'email', 'password', 'no_hp'];
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password'];
 
     protected function casts(): array
     {
         return ['password' => 'hashed'];
+    }
+
+    // Tabel akun (sesuai ERD) tidak punya kolom remember_token, jadi fitur "ingat saya" dimatikan.
+    public function getRememberTokenName(): string
+    {
+        return '';
     }
 
     public function customer(): HasOne { return $this->hasOne(Customer::class, 'akun_id'); }

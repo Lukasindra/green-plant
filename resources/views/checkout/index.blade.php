@@ -23,7 +23,6 @@
 
         <dl class="mt-3 space-y-1 border-t border-gray-200 pt-3 text-sm">
             <div class="flex justify-between"><dt>Subtotal</dt><dd>Rp {{ number_format($subtotal, 0, ',', '.') }}</dd></div>
-            <div class="flex justify-between"><dt>Ongkir</dt><dd>Rp {{ number_format($ongkir, 0, ',', '.') }}</dd></div>
             <div class="flex justify-between pt-1 text-base font-semibold">
                 <dt>Total Pembayaran</dt><dd class="text-brand-700">Rp {{ number_format($total, 0, ',', '.') }}</dd>
             </div>

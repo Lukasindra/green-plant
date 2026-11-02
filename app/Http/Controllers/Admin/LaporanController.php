@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class LaporanController extends Controller
@@ -22,15 +21,12 @@ class LaporanController extends Controller
             [$awal, $akhir] = [$akhir, $awal];
         }
 
-        $punyaStatusProduk = Schema::hasColumn('pesanan_produk', 'status_pembayaran');
-        $punyaStatusJasa = Schema::hasColumn('pesanan_jasa', 'status_pembayaran');
-
         $basisProduk = PesananProduk::query()
             ->whereBetween('tanggal_pesan', [$awal, $akhir])
-            ->when($punyaStatusProduk, fn ($q) => $q->where('status_pembayaran', 'lunas'));
+            ->where('status_pembayaran', 'lunas');
         $basisJasa = PesananJasa::query()
             ->whereBetween('tanggal_pesan', [$awal, $akhir])
-            ->when($punyaStatusJasa, fn ($q) => $q->where('status_pembayaran', 'lunas'));
+            ->where('status_pembayaran', 'lunas');
 
         $rekap = $basisProduk->clone()
             ->selectRaw('tanggal_pesan as tanggal, count(*) as jumlah, coalesce(sum(total_bayar),0) as nilai')

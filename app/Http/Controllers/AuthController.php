@@ -22,7 +22,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($data, $request->boolean('ingat'))) {
+        if (! Auth::attempt($data)) {
             // Pesan sengaja umum, supaya tidak membocorkan email mana yang terdaftar
             return back()->withErrors(['email' => 'Email atau password salah.'])->onlyInput('email');
         }

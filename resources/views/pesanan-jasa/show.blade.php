@@ -59,15 +59,6 @@
                     </ul>
                     @break
 
-                @case('ewallet')
-                    <p class="mb-2 text-sm">Kirim <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu e-wallet:</p>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.ewallet') as $e)
-                            <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $e['nama'] }}</strong> {{ $e['nomor'] }}</li>
-                        @endforeach
-                    </ul>
-                    @break
-
                 @case('qris')
                     <p class="mb-2 text-sm">Scan kode QRIS dan bayar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong>.</p>
                     @if (file_exists(public_path(config('toko.qris_gambar'))))

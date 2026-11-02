@@ -52,13 +52,10 @@ class CheckoutController extends Controller
             return redirect()->route('keranjang.index')->with('error', 'Keranjang Anda masih kosong.');
         }
 
-        $ongkir = (int) config('toko.ongkir');
-
         return view('checkout.index', [
             'baris'    => $baris,
             'subtotal' => $subtotal,
-            'ongkir'   => $ongkir,
-            'total'    => $subtotal + $ongkir,
+            'total'    => $subtotal,
             'alamat'   => $customer->alamat,
         ]);
     }
@@ -69,7 +66,7 @@ class CheckoutController extends Controller
 
         $data = $request->validate([
             'alamat_pengiriman' => ['required', 'string', 'max:500'],
-            'metode_pembayaran' => ['required', 'in:transfer,qris,ewallet,cod'],
+            'metode_pembayaran' => ['required', 'in:transfer,qris,cod'],
         ], [
             'alamat_pengiriman.required' => 'Alamat pengiriman wajib diisi.',
             'metode_pembayaran.required' => 'Pilih metode pembayaran.',
@@ -89,9 +86,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $ongkir = (int) config('toko.ongkir');
-
-        $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal, $ongkir) {
+        $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal) {
             $pesanan = new PesananProduk([
                 'kode'              => 'PRD-' . now()->format('ymd') . '-' . strtoupper(Str::random(4)),
                 'customer_id'       => $customer->id,
@@ -99,8 +94,7 @@ class CheckoutController extends Controller
                 'metode_pembayaran' => $data['metode_pembayaran'],
                 'alamat_pengiriman' => $data['alamat_pengiriman'],
             ]);
-            $pesanan->ongkir      = $ongkir;
-            $pesanan->total_bayar = $subtotal + $ongkir;
+            $pesanan->total_bayar = $subtotal;   // total_bayar = jumlah subtotal item (sesuai ERD)
             $pesanan->save();   // status_pembayaran dan status_pesanan memakai nilai bawaan database
 
             foreach ($baris as $b) {
