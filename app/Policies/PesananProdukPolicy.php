@@ -21,4 +21,14 @@ class PesananProdukPolicy
             && $pesanan->status_pesanan !== 'dibatalkan'
             && $pesanan->metode_pembayaran !== 'cod';
     }
+
+    // Kurir hanya boleh menangani pesanan yang ditugaskan kepadanya.
+    public function antar(Akun $akun, PesananProduk $pesanan): bool
+    {
+        $kurir = $akun->isKurir() ? $akun->karyawan : null;
+
+        return $kurir !== null
+            && $pesanan->kurir_id !== null
+            && (int) $pesanan->kurir_id === (int) $kurir->id;
+    }
 }

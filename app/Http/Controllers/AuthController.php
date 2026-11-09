@@ -29,11 +29,14 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        // Admin langsung ke dashboard (dasbor kurir menyusul)
+        // Admin ke dashboard admin, kurir ke daftar pengantarannya
         /** @var \App\Models\Akun $akun */ 
         $akun = Auth::user();
         if ($akun->isAdmin()) {
             return redirect()->route('admin.dashboard');
+        }
+        if ($akun->isKurir()) {
+            return redirect()->route('kurir.index');
         }
 
         return redirect()->intended(route('produk.index'));

@@ -49,6 +49,9 @@
                         @if (auth()->user()->isCustomer())
                             <a href="{{ route('pesanan.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Pesanan</a>
                         @endif
+                        @if (auth()->user()->isKurir())
+                            <a href="{{ route('kurir.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Tugas Antar</a>
+                        @endif
                         <span class="hidden max-w-32 truncate text-gray-700 md:inline">{{ auth()->user()->nama }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

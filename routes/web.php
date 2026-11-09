@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController
 use App\Http\Controllers\Admin\PengirimanController as AdminPengirimanController;
 use App\Http\Controllers\Admin\PesananController as AdminPesananController;
 use App\Http\Controllers\Admin\ProdukController as AdminProdukController;
+use App\Http\Controllers\Kurir\PengirimanController as KurirPengirimanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckoutController;
@@ -69,6 +70,13 @@ Route::delete('/admin/pengguna/{pengguna}', [AdminPenggunaController::class, 'de
 // Pengaturan (admin): ongkir, rekening transfer & e-wallet toko
 Route::get('/admin/pengaturan', [AdminPengaturanController::class, 'index'])->middleware('auth')->name('admin.pengaturan.index');
 Route::put('/admin/pengaturan', [AdminPengaturanController::class, 'simpan'])->middleware('auth')->name('admin.pengaturan.simpan');
+
+// Kurir: daftar pengantaran milik sendiri dan tandai selesai
+Route::middleware('auth')->prefix('kurir')->name('kurir.')->group(function () {
+    Route::get('/', [KurirPengirimanController::class, 'index'])->name('index');
+    Route::get('/pesanan/{pesanan}', [KurirPengirimanController::class, 'show'])->name('show');
+    Route::post('/pesanan/{pesanan}/selesai', [KurirPengirimanController::class, 'selesai'])->name('selesai');
+});
 
 // Keranjang (session, boleh tanpa login)
 Route::get('/keranjang', [KeranjangController::class, 'index'])->name('keranjang.index');
