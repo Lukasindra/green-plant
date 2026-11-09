@@ -53,7 +53,7 @@
                 @case('transfer')
                     <p class="mb-2 text-sm">Transfer sebesar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu rekening:</p>
                     <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.rekening') as $r)
+                        @foreach (\App\Support\Toko::rekening() as $r)
                             <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $r['bank'] }}</strong> {{ $r['nomor'] }} a.n. {{ $r['nama'] }}</li>
                         @endforeach
                     </ul>
@@ -62,7 +62,7 @@
                 @case('ewallet')
                     <p class="mb-2 text-sm">Kirim <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu e-wallet:</p>
                     <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.ewallet') as $e)
+                        @foreach (\App\Support\Toko::ewallet() as $e)
                             <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $e['nama'] }}</strong> {{ $e['nomor'] }}</li>
                         @endforeach
                     </ul>

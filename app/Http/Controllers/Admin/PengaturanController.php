@@ -89,7 +89,9 @@ class PengaturanController extends Controller
     private function bacaTersimpan($tersimpan, string $kunci, mixed $bawaan): mixed
     {
         if ($tersimpan->has($kunci)) {
-            return json_decode($tersimpan->get($kunci), true) ?: $bawaan;
+            $nilai = json_decode($tersimpan->get($kunci), true);
+
+            return $nilai ?? $bawaan;   // ongkir 0 (gratis) dan daftar kosong tetap sah
         }
 
         return $bawaan;

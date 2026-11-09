@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
+use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -169,9 +171,49 @@ class PesananController extends Controller
             $pesanan->admin_id = $request->user()->karyawan->id;
         }
 
-        $pesanan->save();
+        // Stok produk baru dikurangi saat pembayaran dinyatakan lunas (verifikasi bukti atau konfirmasi COD)
+        $baruLunas = $tipe === 'produk'
+            && $pesanan->status_pembayaran === 'lunas'
+            && $pesanan->getOriginal('status_pembayaran') !== 'lunas';
+
+        try {
+            DB::transaction(function () use ($pesanan, $baruLunas): void {
+                if ($baruLunas) {
+                    $this->kurangiStok($pesanan);
+                }
+
+                $pesanan->save();
+            });
+        } catch (\RuntimeException $e) {
+            return $this->kembali($request, $tipe, $pesanan, $e->getMessage(), 'error');
+        }
 
         return $this->kembali($request, $tipe, $pesanan, $pesan, 'status');
+    }
+
+    // Mengurangi stok tiap produk dalam pesanan. Baris produk dikunci agar dua verifikasi
+    // yang berjalan bersamaan tidak sama-sama lolos untuk stok terakhir.
+    private function kurangiStok(PesananProduk $pesanan): void
+    {
+        if (! Schema::hasTable('produk')) {
+            return;
+        }
+
+        foreach ($pesanan->detail()->get() as $detail) {
+            if (! $detail->produk_id) {
+                continue;
+            }
+
+            $produk = Produk::lockForUpdate()->find($detail->produk_id);
+
+            if (! $produk || $produk->stok < $detail->qty) {
+                throw new \RuntimeException(
+                    'Stok '.($produk?->nama ?? 'produk').' tidak cukup untuk memverifikasi pesanan ini.'
+                );
+            }
+
+            $produk->decrement('stok', $detail->qty);
+        }
     }
 
     private function aksiBayar($pesanan, bool $terima): ?string
