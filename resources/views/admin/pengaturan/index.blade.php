@@ -29,7 +29,7 @@
                     <input type="number" id="ongkir" name="ongkir" min="0" step="500" required
                         value="{{ old('ongkir', $ongkir) }}"
                         class="w-48 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                    @error('ongkir') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('ongkir') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
                 </div>
             </fieldset>
 
@@ -37,7 +37,7 @@
             <fieldset class="space-y-3">
                 <legend class="text-sm font-semibold text-gray-900">Rekening Transfer</legend>
                 <p class="text-xs text-gray-500">Kosongkan baris untuk menghapus. Maksimal 5 baris.</p>
-                @error('rekening') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('rekening') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                 @foreach (range(0, 4) as $i)
                     @php $baris = old('rekening.'.$i, $rekening[$i] ?? ['bank' => '', 'nomor' => '', 'nama' => '']); @endphp
                     <div class="grid grid-cols-3 gap-2" aria-label="Rekening {{ $i + 1 }}">
@@ -58,7 +58,7 @@
             <fieldset class="space-y-3">
                 <legend class="text-sm font-semibold text-gray-900">E-Wallet</legend>
                 <p class="text-xs text-gray-500">Kosongkan baris untuk menghapus. Maksimal 5 baris.</p>
-                @error('ewallet') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('ewallet') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                 @foreach (range(0, 4) as $i)
                     @php $baris = old('ewallet.'.$i, $ewallet[$i] ?? ['nama' => '', 'nomor' => '']); @endphp
                     <div class="grid grid-cols-2 gap-2" aria-label="E-Wallet {{ $i + 1 }}">

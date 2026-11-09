@@ -110,11 +110,12 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return array{kode: string, pelanggan: string, tipe: string, tanggal: CarbonImmutable, nilai: int, status: ?string}
+     * @return array{id: int, kode: string, pelanggan: string, tipe: string, tanggal: CarbonImmutable, nilai: int, status: ?string}
      */
     private function formatPesanan(PesananProduk|PesananJasa $pesanan, string $tipe): array
     {
         return [
+            'id' => $pesanan->id,
             'kode' => $pesanan->kode,
             'pelanggan' => $pesanan->customer?->akun?->nama ?? 'Pelanggan',
             'tipe' => $tipe,

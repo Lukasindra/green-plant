@@ -82,7 +82,6 @@
                          alt="Bukti pembayaran {{ $pesanan->kode }}"
                          class="h-64 w-full bg-gray-50 object-contain">
                 </div>
-                <p class="mb-4 text-xs text-gray-500">Sumber: {{ $pesanan->bukti_bayar }}</p>
             @else
                 <p class="mb-4 rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">Belum ada bukti pembayaran yang diunggah.</p>
             @endif

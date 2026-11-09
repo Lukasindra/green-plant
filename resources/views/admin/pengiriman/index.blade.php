@@ -10,11 +10,6 @@
             'selesai' => 'Selesai',
         ];
         $formatUang = fn ($nilai) => 'Rp ' . number_format((float) $nilai, 0, ',', '.');
-        $statusBadge = [
-            'diproses' => ['Menunggu Kirim', 'bg-amber-100 text-amber-800'],
-            'dikirim' => ['Dikirim', 'bg-sky-100 text-sky-800'],
-            'selesai' => ['Selesai', 'bg-emerald-100 text-emerald-800'],
-        ];
     @endphp
 
     <div class="space-y-6">
@@ -46,9 +41,6 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse ($pesanan as $item)
-                            @php
-                                [$teksStatus, $kelasStatus] = $statusBadge[$item->status_pesanan ?? 'diproses'] ?? ['', ''];
-                            @endphp
                             <tr>
                                 <td class="px-5 py-4 align-top">
                                     <span class="block font-medium text-gray-900">{{ $item->kode }}</span>

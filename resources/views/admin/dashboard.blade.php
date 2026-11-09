@@ -23,7 +23,7 @@
                 <div>
                     <p class="text-sm text-gray-500">Total Pesanan</p>
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahPesanan) }}</p>
-                    <p class="mt-1 text-xs text-gray-500">Pesanan</p>
+                    <p class="mt-1 text-xs text-gray-500">Produk + jasa</p>
                 </div>
                 <span class="rounded-lg bg-emerald-50 p-3 text-xl text-brand-700" aria-hidden="true">▤</span>
             </div>
@@ -34,7 +34,7 @@
                 <div>
                     <p class="text-sm text-gray-500">Total Produk</p>
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahProduk) }}</p>
-                    <p class="mt-1 text-xs text-gray-500">Produk</p>
+                    <p class="mt-1 text-xs text-gray-500">Item katalog</p>
                 </div>
                 <span class="rounded-lg bg-lime-50 p-3 text-xl text-lime-700" aria-hidden="true">♧</span>
             </div>
@@ -45,7 +45,7 @@
                 <div>
                     <p class="text-sm text-gray-500">Total Jasa</p>
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahJasa) }}</p>
-                    <p class="mt-1 text-xs text-gray-500">Produk</p>
+                    <p class="mt-1 text-xs text-gray-500">Item katalog</p>
                 </div>
                 <span class="rounded-lg bg-teal-50 p-3 text-xl text-teal-700" aria-hidden="true">⚒</span>
             </div>
@@ -86,9 +86,14 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($recentOrders as $order)
-                                <tr>
+                                @php
+                                    $ruteDetail = $order['tipe'] === 'Jasa'
+                                        ? 'admin.pesanan.jasa.show'
+                                        : 'admin.pesanan.produk.show';
+                                @endphp
+                                <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-3.5">
-                                        <span class="block font-medium text-gray-900">{{ $order['kode'] }}</span>
+                                        <a href="{{ route($ruteDetail, $order['id']) }}" class="block font-medium text-gray-900 hover:text-brand-800" title="Lihat detail pesanan">{{ $order['kode'] }}</a>
                                         <span class="mt-1 block text-xs text-gray-500">{{ $order['pelanggan'] }}</span>
                                     </td>
                                     <td class="px-3 py-3.5 text-gray-600">{{ $order['tipe'] }}</td>
@@ -99,7 +104,7 @@
                                             <span class="text-gray-400">-</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $order['tanggal']->format('d/m/Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $order['tanggal']->format('d M Y') }}</td>
                                     <td class="whitespace-nowrap px-5 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($order['nilai'], 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach

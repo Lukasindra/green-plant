@@ -68,7 +68,7 @@
                                         ? 'admin.pesanan.jasa.show'
                                         : 'admin.pesanan.produk.show';
                                 @endphp
-                                <tr>
+                                <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-3.5">
                                         <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
                                         <span class="mt-1 block text-xs text-gray-500">{{ $item->customer?->akun?->nama ?? '-' }}</span>
@@ -84,7 +84,7 @@
                                             <span class="text-gray-400">-</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->format('d/m/Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->format('d M Y') }}</td>
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-5 py-3.5">
                                         <div class="flex items-center justify-end gap-3">

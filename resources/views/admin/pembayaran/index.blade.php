@@ -73,7 +73,7 @@
                                     $ruteDetail = $adalahJasa ? 'admin.pesanan.jasa.show' : 'admin.pesanan.produk.show';
                                     $ruteAksi = $adalahJasa ? route('admin.pesanan.jasa.aksi', $item) : route('admin.pesanan.produk.aksi', $item);
                                 @endphp
-                                <tr>
+                                <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-3.5">
                                         <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
                                         <span class="mt-1 block text-xs text-gray-500">{{ $item->customer?->akun?->nama ?? '-' }}</span>

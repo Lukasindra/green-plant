@@ -81,7 +81,7 @@
                                                 onsubmit="return confirm('Hapus pengguna {{ $akun->nama }}?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="font-medium text-red-600 hover:text-red-800">Hapus</button>
+                                                <button type="submit" class="font-medium text-red-700 hover:text-red-800">Hapus</button>
                                             </form>
                                         @else
                                             <span class="text-gray-400">(Anda)</span>
