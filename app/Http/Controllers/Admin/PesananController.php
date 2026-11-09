@@ -19,8 +19,6 @@ class PesananController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $tipe = in_array($request->query('tipe'), ['produk', 'jasa'], true)
             ? $request->query('tipe')
             : 'semua';
@@ -48,8 +46,6 @@ class PesananController extends Controller
 
     public function showProduk(Request $request, PesananProduk $pesanan): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan->load('detail.produk', 'customer.akun');
 
         return view('admin.pesanan.show', [
@@ -60,8 +56,6 @@ class PesananController extends Controller
 
     public function showJasa(Request $request, PesananJasa $pesanan): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan->load('detail.jasa', 'customer.akun');
 
         return view('admin.pesanan.show', [
@@ -72,23 +66,17 @@ class PesananController extends Controller
 
     public function aksiProduk(Request $request, PesananProduk $pesanan): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return $this->terapkanAksi($request, $pesanan, 'produk');
     }
 
     public function aksiJasa(Request $request, PesananJasa $pesanan): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return $this->terapkanAksi($request, $pesanan, 'jasa');
     }
 
     // Bukti bayar disimpan di disk privat: hanya admin yang boleh melihat
     public function bukti(Request $request, string $tipe, int $id)
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan = $tipe === 'jasa'
             ? PesananJasa::query()->findOrFail($id)
             : PesananProduk::query()->findOrFail($id);

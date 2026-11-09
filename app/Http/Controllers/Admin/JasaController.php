@@ -16,8 +16,6 @@ class JasaController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.jasa.index', [
             'jasa' => Jasa::query()
                 ->with('kategori')
@@ -28,8 +26,6 @@ class JasaController extends Controller
 
     public function create(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.jasa.create', [
             'jasa' => null,
             'kategori' => Kategori::query()
@@ -41,8 +37,6 @@ class JasaController extends Controller
 
     public function edit(Request $request, Jasa $jasa): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.jasa.create', [
             'jasa' => $jasa,
             'kategori' => Kategori::query()
@@ -54,8 +48,6 @@ class JasaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $this->validatedServiceData($request);
         $data['foto'] = $this->storePhoto($request);
 
@@ -68,8 +60,6 @@ class JasaController extends Controller
 
     public function update(Request $request, Jasa $jasa): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $this->validatedServiceData($request, true);
         $newPhoto = $this->storePhoto($request);
         $oldPhoto = $jasa->foto;
@@ -90,8 +80,6 @@ class JasaController extends Controller
 
     public function destroy(Request $request, Jasa $jasa): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if (DetailPesananJasa::query()->where('jasa_id', $jasa->id)->exists()) {
             return redirect()
                 ->route('admin.jasa.index')

@@ -13,15 +13,11 @@ class PengaturanController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.pengaturan.index', $this->data());
     }
 
     public function simpan(Request $request): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if (! Schema::hasTable('pengaturan')) {
             return redirect()
                 ->route('admin.pengaturan.index')

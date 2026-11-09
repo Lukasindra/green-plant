@@ -73,8 +73,6 @@ class PengirimanController extends Controller
 
     private function kurirAtauTolak(Request $request): Karyawan
     {
-        abort_unless($request->user()?->isKurir(), 403);
-
         $kurir = $request->user()->karyawan;
         abort_if(! $kurir, 403, 'Akun kurir belum terdaftar sebagai karyawan.');
 

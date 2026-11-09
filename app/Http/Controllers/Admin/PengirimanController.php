@@ -13,8 +13,6 @@ class PengirimanController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $status = in_array($request->query('status'), ['siap', 'dikirim', 'selesai'], true)
             ? $request->query('status')
             : 'siap';
@@ -55,8 +53,6 @@ class PengirimanController extends Controller
 
     public function aksi(Request $request, PesananProduk $pesanan): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $punyaKolomStatus = Schema::hasColumn((new PesananProduk)->getTable(), 'status_pesanan');
         $statusPesanan = $punyaKolomStatus ? ($pesanan->status_pesanan ?? 'diproses') : 'diproses';
         $lunas = in_array($pesanan->status_pembayaran, ['lunas', 'dibayar'], true);
