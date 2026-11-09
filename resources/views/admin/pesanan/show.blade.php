@@ -122,6 +122,27 @@
                         </form>
                     @endif
 
+                    @if ($tipe === 'jasa' && $lunas && $punyaStatusPesanan && ! in_array($statusPesanan, ['dikerjakan', 'selesai'], true))
+                        <form method="POST" action="{{ $ruteAksi }}" class="space-y-2">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="jadwalkan">
+                            <label for="jadwal" class="block text-xs font-medium text-gray-600">Jadwal pengerjaan</label>
+                            <input id="jadwal" type="datetime-local" name="jadwal"
+                                   value="{{ $pesanan->jadwal_pengerjaan?->format('Y-m-d\TH:i') }}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                            <button type="submit" class="w-full rounded-lg border border-brand-700 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+                                {{ $statusPesanan === 'dijadwalkan' ? 'Jadwalkan Ulang' : 'Jadwalkan Pengerjaan' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ $ruteAksi }}">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="mulai_kerja">
+                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Mulai Dikerjakan</button>
+                        </form>
+                    @endif
+
                     @if ($lunas && ! in_array($statusPesanan, ['selesai'], true) && ($tipe === 'jasa' || $statusPesanan === 'dikirim' || ! $punyaStatusPesanan))
                         <form method="POST" action="{{ $ruteAksi }}">
                             @csrf

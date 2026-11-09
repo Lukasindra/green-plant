@@ -9,6 +9,7 @@ use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -99,7 +100,7 @@ class PesananController extends Controller
 
     private function ambilPesanan(string $tipe, ?string $status)
     {
-        $status = in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas', 'dikirim', 'selesai', 'dibatalkan'], true)
+        $status = in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas', 'dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)
             ? $status
             : null;
 
@@ -119,7 +120,7 @@ class PesananController extends Controller
 
             if (in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas'], true)) {
                 $query->where('status_pembayaran', $status);
-            } elseif (in_array($status, ['dikirim', 'selesai', 'dibatalkan'], true)) {
+            } elseif (in_array($status, ['dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)) {
                 if (Schema::hasColumn((new $model)->getTable(), 'status_pesanan')) {
                     $query->where('status_pesanan', $status);
                 } else {
@@ -157,6 +158,8 @@ class PesananController extends Controller
             'dikirim' => $tipe === 'produk'
                 ? $this->aksiDikirim($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan)
                 : null,
+            'jadwalkan' => $this->aksiJadwalkan($request, $pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
+            'mulai_kerja' => $this->aksiMulaiKerja($pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
             'selesai' => $this->aksiSelesai($pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
             'batalkan' => $this->aksiBatalkan($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan),
             default => null,
@@ -267,6 +270,42 @@ class PesananController extends Controller
         $pesanan->tanggal_kirim = now()->toDateString();
 
         return 'Pesanan ditandai sudah dikirim.';
+    }
+
+    // Khusus jasa: admin menetapkan jadwal pengerjaan (boleh sekaligus mengubah tanggalnya).
+    private function aksiJadwalkan(Request $request, $pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    {
+        if ($tipe !== 'jasa' || ! $lunas || ! $punyaStatusPesanan
+            || in_array($statusPesanan, ['dikerjakan', 'selesai', 'dibatalkan'], true)) {
+            return null;
+        }
+
+        $jadwalBaru = $request->input('jadwal');
+
+        if (filled($jadwalBaru) && Schema::hasColumn($pesanan->getTable(), 'jadwal_pengerjaan')) {
+            try {
+                $pesanan->jadwal_pengerjaan = Carbon::parse($jadwalBaru);
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        $pesanan->status_pesanan = 'dijadwalkan';
+
+        return 'Pesanan jasa dijadwalkan.';
+    }
+
+    // Khusus jasa: pengerjaan di lokasi dimulai.
+    private function aksiMulaiKerja($pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    {
+        if ($tipe !== 'jasa' || ! $lunas || ! $punyaStatusPesanan
+            || in_array($statusPesanan, ['dikerjakan', 'selesai', 'dibatalkan'], true)) {
+            return null;
+        }
+
+        $pesanan->status_pesanan = 'dikerjakan';
+
+        return 'Pengerjaan jasa dimulai.';
     }
 
     private function aksiSelesai($pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
