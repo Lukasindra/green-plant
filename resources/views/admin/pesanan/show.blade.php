@@ -93,13 +93,13 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="verifikasi_bayar">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Verifikasi Bukti Bayar</button>
+                            <x-button class="w-full">Verifikasi Bukti Bayar</x-button>
                         </form>
                         <form method="POST" action="{{ $ruteAksi }}">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="tolak_bayar">
-                            <button type="submit" class="w-full rounded-lg border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Tolak Bukti Bayar</button>
+                            <x-button varian="outline" class="w-full">Tolak Bukti Bayar</x-button>
                         </form>
                     @endif
 
@@ -108,7 +108,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="konfirmasi_cod">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Konfirmasi COD</button>
+                            <x-button class="w-full">Konfirmasi COD</x-button>
                         </form>
                     @endif
 
@@ -117,7 +117,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="dikirim">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Tandai Dikirim</button>
+                            <x-button class="w-full">Tandai Dikirim</x-button>
                         </form>
                     @endif
 
@@ -130,15 +130,15 @@
                             <input id="jadwal" type="datetime-local" name="jadwal"
                                    value="{{ $pesanan->jadwal_pengerjaan?->format('Y-m-d\TH:i') }}"
                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                            <button type="submit" class="w-full rounded-lg border border-brand-700 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+                            <x-button varian="brand-outline" class="w-full">
                                 {{ $statusPesanan === 'dijadwalkan' ? 'Jadwalkan Ulang' : 'Jadwalkan Pengerjaan' }}
-                            </button>
+                            </x-button>
                         </form>
                         <form method="POST" action="{{ $ruteAksi }}">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="mulai_kerja">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Mulai Dikerjakan</button>
+                            <x-button class="w-full">Mulai Dikerjakan</x-button>
                         </form>
                     @endif
 
@@ -147,7 +147,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="selesai">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Tandai Selesai</button>
+                            <x-button class="w-full">Tandai Selesai</x-button>
                         </form>
                     @endif
 
@@ -156,7 +156,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="batalkan">
-                            <button type="submit" class="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50">Batalkan Pesanan</button>
+                            <x-button varian="danger" class="w-full">Batalkan Pesanan</x-button>
                         </form>
                     @endif
                 </div>
@@ -166,3 +166,4 @@
         </section>
     </div>
 @endsection
+

@@ -46,9 +46,9 @@
             </form>
         </div>
 
-        <section aria-label="Daftar pesanan" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            @if ($pesanan->isEmpty())
-                <p class="px-6 py-14 text-center text-sm text-gray-500">Belum ada pesanan untuk filter ini.</p>
+    <x-panel>
+        @if ($pesanan->isEmpty())
+            <p class="px-6 py-14 text-center text-sm text-gray-500">Belum ada pesanan untuk filter ini.</p>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[52rem] text-left text-sm">
@@ -105,10 +105,12 @@
                         </tbody>
                     </table>
                 </div>
+            @if ($pesanan->hasPages())
                 <div class="border-t border-gray-100 px-5 py-4">
                     {{ $pesanan->links() }}
                 </div>
             @endif
-        </section>
+            @endif
+        </x-panel>
     </div>
 @endsection

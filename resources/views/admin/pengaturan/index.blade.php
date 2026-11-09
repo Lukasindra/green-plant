@@ -40,16 +40,13 @@
                 @error('rekening') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                 @foreach (range(0, 4) as $i)
                     @php $baris = old('rekening.'.$i, $rekening[$i] ?? ['bank' => '', 'nomor' => '', 'nama' => '']); @endphp
-                    <div class="grid grid-cols-3 gap-2" aria-label="Rekening {{ $i + 1 }}">
-                        <input type="text" name="rekening[{{ $i }}][bank]" value="{{ $baris['bank'] }}" placeholder="Bank"
-                            aria-label="Nama bank {{ $i + 1 }}"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                        <input type="text" name="rekening[{{ $i }}][nomor]" value="{{ $baris['nomor'] }}" placeholder="Nomor"
-                            aria-label="Nomor rekening {{ $i + 1 }}"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                        <input type="text" name="rekening[{{ $i }}][nama]" value="{{ $baris['nama'] }}" placeholder="Nama pemilik"
-                            aria-label="Nama pemilik rekening {{ $i + 1 }}"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                    <div class="grid grid-cols-3 gap-2">
+                        <x-input nama="rekening[{{ $i }}][bank]" aria-label="Nama bank {{ $i + 1 }}"
+                            placeholder="Bank" value="{{ $baris['bank'] }}" />
+                        <x-input nama="rekening[{{ $i }}][nomor]" aria-label="Nomor rekening {{ $i + 1 }}"
+                            placeholder="Nomor" value="{{ $baris['nomor'] }}" />
+                        <x-input nama="rekening[{{ $i }}][nama]" aria-label="Nama pemilik rekening {{ $i + 1 }}"
+                            placeholder="Nama pemilik" value="{{ $baris['nama'] }}" />
                     </div>
                 @endforeach
             </fieldset>
@@ -61,21 +58,17 @@
                 @error('ewallet') <p class="text-sm text-red-700">{{ $message }}</p> @enderror
                 @foreach (range(0, 4) as $i)
                     @php $baris = old('ewallet.'.$i, $ewallet[$i] ?? ['nama' => '', 'nomor' => '']); @endphp
-                    <div class="grid grid-cols-2 gap-2" aria-label="E-Wallet {{ $i + 1 }}">
-                        <input type="text" name="ewallet[{{ $i }}][nama]" value="{{ $baris['nama'] }}" placeholder="Nama e-wallet"
-                            aria-label="Nama e-wallet {{ $i + 1 }}"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                        <input type="text" name="ewallet[{{ $i }}][nomor]" value="{{ $baris['nomor'] }}" placeholder="Nomor"
-                            aria-label="Nomor e-wallet {{ $i + 1 }}"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                    <div class="grid grid-cols-2 gap-2">
+                        <x-input nama="ewallet[{{ $i }}][nama]" aria-label="Nama e-wallet {{ $i + 1 }}"
+                            placeholder="Nama e-wallet" value="{{ $baris['nama'] }}" />
+                        <x-input nama="ewallet[{{ $i }}][nomor]" aria-label="Nomor e-wallet {{ $i + 1 }}"
+                            placeholder="Nomor" value="{{ $baris['nomor'] }}" />
                     </div>
                 @endforeach
             </fieldset>
 
             <div class="flex items-center gap-3 border-t border-gray-100 pt-4">
-                <button type="submit" class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800">
-                    Simpan Pengaturan
-                </button>
+                <x-button>Simpan Pengaturan</x-button>
             </div>
         </form>
     </div>

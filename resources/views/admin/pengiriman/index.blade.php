@@ -26,7 +26,7 @@
             </div>
         </div>
 
-        <section aria-label="Daftar pengiriman" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[56rem] text-left text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -73,19 +73,13 @@
                                                     <option value="{{ $kurir->id }}">{{ $kurir->username }}</option>
                                                 @endforeach
                                             </select>
-                                            <button type="submit"
-                                                class="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-800">
-                                                Tandai Dikirim
-                                            </button>
+                                            <x-button ukuran="sm">Tandai Dikirim</x-button>
                                         </form>
                                     @elseif ($status === 'dikirim')
                                         <form method="POST" action="{{ route('admin.pengiriman.aksi', ['pesanan' => $item]) }}">
                                             @csrf
                                             <input type="hidden" name="aksi" value="selesai">
-                                            <button type="submit"
-                                                class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700">
-                                                Tandai Selesai
-                                            </button>
+                                            <x-button varian="sukses" ukuran="sm">Tandai Selesai</x-button>
                                         </form>
                                     @else
                                         <span class="text-gray-400">-</span>
@@ -102,9 +96,11 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-gray-100 px-5 py-4">
-                {{ $pesanan->links() }}
-            </div>
-        </section>
+            @if ($pesanan->hasPages())
+                <div class="border-t border-gray-100 px-5 py-4">
+                    {{ $pesanan->links() }}
+                </div>
+            @endif
+        </x-panel>
     </div>
 @endsection

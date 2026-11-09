@@ -21,10 +21,7 @@
                 <input type="date" id="akhir" name="akhir" value="{{ $akhir }}"
                     class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
             </div>
-            <button type="submit"
-                class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800">
-                Terapkan
-            </button>
+            <x-button>Terapkan</x-button>
         </form>
 
         {{-- Ringkasan --}}
@@ -49,7 +46,7 @@
         </section>
 
         {{-- Rekap per tanggal --}}
-        <section aria-label="Rekapitulasi per tanggal" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[48rem] text-left text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -94,6 +91,6 @@
                     </tfoot>
                 </table>
             </div>
-        </section>
+        </x-panel>
     </div>
 @endsection

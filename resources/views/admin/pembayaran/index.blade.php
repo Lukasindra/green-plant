@@ -49,7 +49,7 @@
             </div>
         </div>
 
-        <section aria-label="Daftar pembayaran" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             @if ($pesanan->isEmpty())
                 <p class="px-6 py-14 text-center text-sm text-gray-500">Tidak ada pembayaran pada status ini.</p>
             @else
@@ -126,10 +126,12 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="border-t border-gray-100 px-5 py-4">
-                    {{ $pesanan->links() }}
-                </div>
+                @if ($pesanan->hasPages())
+                    <div class="border-t border-gray-100 px-5 py-4">
+                        {{ $pesanan->links() }}
+                    </div>
+                @endif
             @endif
-        </section>
+        </x-panel>
     </div>
 @endsection

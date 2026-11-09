@@ -36,13 +36,10 @@
                 </button>
             </form>
 
-            <a href="{{ route('admin.pengguna.create') }}"
-                class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800">
-                + Tambah Pengguna
-            </a>
+            <x-button href="{{ route('admin.pengguna.create') }}">+ Tambah Pengguna</x-button>
         </div>
 
-        <section aria-label="Daftar pengguna" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[48rem] text-left text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -97,9 +94,11 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-gray-100 px-5 py-4">
-                {{ $pengguna->links() }}
-            </div>
-        </section>
+            @if ($pengguna->hasPages())
+                <div class="border-t border-gray-100 px-5 py-4">
+                    {{ $pengguna->links() }}
+                </div>
+            @endif
+        </x-panel>
     </div>
 @endsection

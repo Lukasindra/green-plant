@@ -18,7 +18,7 @@
     @endphp
 
     <section aria-label="Ringkasan data" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <x-card class="p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm text-gray-500">Total Pesanan</p>
@@ -27,9 +27,9 @@
                 </div>
                 <span class="rounded-lg bg-emerald-50 p-3 text-xl text-brand-700" aria-hidden="true">▤</span>
             </div>
-        </article>
+        </x-card>
 
-        <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <x-card class="p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm text-gray-500">Total Produk</p>
@@ -38,9 +38,9 @@
                 </div>
                 <span class="rounded-lg bg-lime-50 p-3 text-xl text-lime-700" aria-hidden="true">♧</span>
             </div>
-        </article>
+        </x-card>
 
-        <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <x-card class="p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm text-gray-500">Total Jasa</p>
@@ -49,9 +49,9 @@
                 </div>
                 <span class="rounded-lg bg-teal-50 p-3 text-xl text-teal-700" aria-hidden="true">⚒</span>
             </div>
-        </article>
+        </x-card>
 
-        <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <x-card class="p-5">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-sm text-gray-500">Total Pendapatan</p>
@@ -60,15 +60,11 @@
                 </div>
                 <span class="rounded-lg bg-green-50 p-3 text-xl text-green-700" aria-hidden="true">Rp</span>
             </div>
-        </article>
+        </x-card>
     </section>
 
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.9fr)]">
-        <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div class="border-b border-gray-100 px-5 py-4">
-                <h2 class="font-semibold text-gray-900">Pesanan Terbaru</h2>
-                <p class="mt-1 text-xs text-gray-500">Pesanan produk dan jasa yang baru dibuat</p>
-            </div>
+        <x-panel judul="Pesanan Terbaru" subjudul="Pesanan produk dan jasa yang baru dibuat">
 
             @if ($recentOrders->isEmpty())
                 <p class="px-5 py-10 text-center text-sm text-gray-500">Belum ada pesanan.</p>
@@ -112,9 +108,9 @@
                     </table>
                 </div>
             @endif
-        </article>
+        </x-panel>
 
-        <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <x-card class="p-5">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="font-semibold text-gray-900">Penjualan</h2>
@@ -141,6 +137,7 @@
                 </div>
                 <p class="mt-4 text-xs leading-5 text-gray-500">Grafik hanya menghitung pesanan yang sudah lunas.</p>
             </div>
-        </article>
+        </x-card>
     </section>
 @endsection
+

@@ -4,45 +4,20 @@
         @method('PUT')
     @endif
 
-    <div>
-        <label for="nama" class="block text-sm font-medium text-gray-700">Nama barang <span class="text-red-600">*</span></label>
-        <input id="nama" name="nama" type="text" value="{{ old('nama', $produk?->nama) }}" maxlength="100" required autofocus
-            class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-        @error('nama') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-    </div>
+    <x-input nama="nama" label="Nama barang" wajib maxlength="100" autofocus value="{{ old('nama', $produk?->nama) }}" />
 
-    <div>
-        <label for="kategori_id" class="block text-sm font-medium text-gray-700">Kategori</label>
-        <select id="kategori_id" name="kategori_id"
-            class="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-            <option value="">Tanpa kategori</option>
-            @foreach ($kategori as $item)
-                <option value="{{ $item->id }}" @selected(old('kategori_id', $produk?->kategori_id) == $item->id)>{{ $item->nama }}</option>
-            @endforeach
-        </select>
-        @error('kategori_id') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-    </div>
+    <x-select nama="kategori_id" label="Kategori">
+        <option value="">Tanpa kategori</option>
+        @foreach ($kategori as $item)
+            <option value="{{ $item->id }}" @selected(old('kategori_id', $produk?->kategori_id) == $item->id)>{{ $item->nama }}</option>
+        @endforeach
+    </x-select>
 
-    <div>
-        <label for="deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-        <textarea id="deskripsi" name="deskripsi" rows="4" maxlength="5000"
-            class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">{{ old('deskripsi', $produk?->deskripsi) }}</textarea>
-        @error('deskripsi') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-    </div>
+    <x-textarea nama="deskripsi" label="Deskripsi" baris="4" maxlength="5000">{{ old('deskripsi', $produk?->deskripsi) }}</x-textarea>
 
     <div class="grid gap-5 sm:grid-cols-2">
-        <div>
-            <label for="harga" class="block text-sm font-medium text-gray-700">Harga (Rp) <span class="text-red-600">*</span></label>
-            <input id="harga" name="harga" type="number" value="{{ old('harga', $produk?->harga) }}" min="0" max="4294967295" step="1" required
-                class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-            @error('harga') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-        </div>
-        <div>
-            <label for="stok" class="block text-sm font-medium text-gray-700">Stok <span class="text-red-600">*</span></label>
-            <input id="stok" name="stok" type="number" value="{{ old('stok', $produk?->stok) }}" min="0" max="4294967295" step="1" required
-                class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-            @error('stok') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-        </div>
+        <x-input nama="harga" label="Harga (Rp)" tipe="number" wajib min="0" max="4294967295" step="1" value="{{ old('harga', $produk?->harga) }}" />
+        <x-input nama="stok" label="Stok" tipe="number" wajib min="0" max="4294967295" step="1" value="{{ old('stok', $produk?->stok) }}" />
     </div>
 
     <div>
@@ -67,7 +42,7 @@
     </div>
 
     <div class="flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-5">
-        <a href="{{ route('admin.produk.index') }}" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</a>
-        <button type="submit" class="rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">{{ $produk ? 'Simpan Perubahan' : 'Simpan Produk' }}</button>
+        <x-button varian="outline" href="{{ route('admin.produk.index') }}">Batal</x-button>
+        <x-button>{{ $produk ? 'Simpan Perubahan' : 'Simpan Produk' }}</x-button>
     </div>
 </form>
