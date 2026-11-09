@@ -17,8 +17,6 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $hariIni = CarbonImmutable::today();
 
         // Pesanan terbaru (produk + jasa), diurutkan dari yang paling baru

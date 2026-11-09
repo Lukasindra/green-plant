@@ -9,6 +9,8 @@
             'menunggu_bayar' => 'Menunggu bayar',
             'menunggu_verifikasi' => 'Menunggu verifikasi',
             'lunas' => 'Lunas',
+            'dijadwalkan' => 'Dijadwalkan',
+            'dikerjakan' => 'Dikerjakan',
             'dikirim' => 'Dikirim',
             'selesai' => 'Selesai',
             'dibatalkan' => 'Dibatalkan',

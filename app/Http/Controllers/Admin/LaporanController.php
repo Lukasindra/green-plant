@@ -13,8 +13,6 @@ class LaporanController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $awal = $this->tanggalValid($request->input('awal')) ?? now()->startOfMonth()->toDateString();
         $akhir = $this->tanggalValid($request->input('akhir')) ?? now()->toDateString();
 

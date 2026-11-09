@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
+use App\Models\Produk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -16,8 +19,6 @@ class PesananController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $tipe = in_array($request->query('tipe'), ['produk', 'jasa'], true)
             ? $request->query('tipe')
             : 'semua';
@@ -45,8 +46,6 @@ class PesananController extends Controller
 
     public function showProduk(Request $request, PesananProduk $pesanan): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan->load('detail.produk', 'customer.akun');
 
         return view('admin.pesanan.show', [
@@ -57,8 +56,6 @@ class PesananController extends Controller
 
     public function showJasa(Request $request, PesananJasa $pesanan): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan->load('detail.jasa', 'customer.akun');
 
         return view('admin.pesanan.show', [
@@ -69,23 +66,17 @@ class PesananController extends Controller
 
     public function aksiProduk(Request $request, PesananProduk $pesanan): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return $this->terapkanAksi($request, $pesanan, 'produk');
     }
 
     public function aksiJasa(Request $request, PesananJasa $pesanan): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return $this->terapkanAksi($request, $pesanan, 'jasa');
     }
 
     // Bukti bayar disimpan di disk privat: hanya admin yang boleh melihat
     public function bukti(Request $request, string $tipe, int $id)
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $pesanan = $tipe === 'jasa'
             ? PesananJasa::query()->findOrFail($id)
             : PesananProduk::query()->findOrFail($id);
@@ -97,7 +88,7 @@ class PesananController extends Controller
 
     private function ambilPesanan(string $tipe, ?string $status)
     {
-        $status = in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas', 'dikirim', 'selesai', 'dibatalkan'], true)
+        $status = in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas', 'dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)
             ? $status
             : null;
 
@@ -117,7 +108,7 @@ class PesananController extends Controller
 
             if (in_array($status, ['menunggu_bayar', 'menunggu_verifikasi', 'lunas'], true)) {
                 $query->where('status_pembayaran', $status);
-            } elseif (in_array($status, ['dikirim', 'selesai', 'dibatalkan'], true)) {
+            } elseif (in_array($status, ['dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)) {
                 if (Schema::hasColumn((new $model)->getTable(), 'status_pesanan')) {
                     $query->where('status_pesanan', $status);
                 } else {
@@ -155,6 +146,8 @@ class PesananController extends Controller
             'dikirim' => $tipe === 'produk'
                 ? $this->aksiDikirim($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan)
                 : null,
+            'jadwalkan' => $this->aksiJadwalkan($request, $pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
+            'mulai_kerja' => $this->aksiMulaiKerja($pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
             'selesai' => $this->aksiSelesai($pesanan, $tipe, $lunas, $punyaStatusPesanan, $statusPesanan),
             'batalkan' => $this->aksiBatalkan($pesanan, $lunas, $punyaStatusPesanan, $statusPesanan),
             default => null,
@@ -169,9 +162,58 @@ class PesananController extends Controller
             $pesanan->admin_id = $request->user()->karyawan->id;
         }
 
-        $pesanan->save();
+        // Selaraskan dengan alur di database: pesanan produk yang baru lunas berstatus 'dibayar'
+        if ($tipe === 'produk'
+            && $punyaStatusPesanan
+            && $pesanan->status_pembayaran === 'lunas'
+            && $pesanan->getOriginal('status_pembayaran') !== 'lunas'
+            && $pesanan->status_pesanan === 'menunggu_pembayaran') {
+            $pesanan->status_pesanan = 'dibayar';
+        }
+
+        // Stok produk baru dikurangi saat pembayaran dinyatakan lunas (verifikasi bukti atau konfirmasi COD)
+        $baruLunas = $tipe === 'produk'
+            && $pesanan->status_pembayaran === 'lunas'
+            && $pesanan->getOriginal('status_pembayaran') !== 'lunas';
+
+        try {
+            DB::transaction(function () use ($pesanan, $baruLunas): void {
+                if ($baruLunas) {
+                    $this->kurangiStok($pesanan);
+                }
+
+                $pesanan->save();
+            });
+        } catch (\RuntimeException $e) {
+            return $this->kembali($request, $tipe, $pesanan, $e->getMessage(), 'error');
+        }
 
         return $this->kembali($request, $tipe, $pesanan, $pesan, 'status');
+    }
+
+    // Mengurangi stok tiap produk dalam pesanan. Baris produk dikunci agar dua verifikasi
+    // yang berjalan bersamaan tidak sama-sama lolos untuk stok terakhir.
+    private function kurangiStok(PesananProduk $pesanan): void
+    {
+        if (! Schema::hasTable('produk')) {
+            return;
+        }
+
+        foreach ($pesanan->detail()->get() as $detail) {
+            if (! $detail->produk_id) {
+                continue;
+            }
+
+            $produk = Produk::lockForUpdate()->find($detail->produk_id);
+
+            if (! $produk || $produk->stok < $detail->qty) {
+                throw new \RuntimeException(
+                    'Stok '.($produk?->nama ?? 'produk').' tidak cukup untuk memverifikasi pesanan ini.'
+                );
+            }
+
+            $produk->decrement('stok', $detail->qty);
+        }
     }
 
     private function aksiBayar($pesanan, bool $terima): ?string
@@ -216,6 +258,42 @@ class PesananController extends Controller
         $pesanan->tanggal_kirim = now()->toDateString();
 
         return 'Pesanan ditandai sudah dikirim.';
+    }
+
+    // Khusus jasa: admin menetapkan jadwal pengerjaan (boleh sekaligus mengubah tanggalnya).
+    private function aksiJadwalkan(Request $request, $pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    {
+        if ($tipe !== 'jasa' || ! $lunas || ! $punyaStatusPesanan
+            || in_array($statusPesanan, ['dikerjakan', 'selesai', 'dibatalkan'], true)) {
+            return null;
+        }
+
+        $jadwalBaru = $request->input('jadwal');
+
+        if (filled($jadwalBaru) && Schema::hasColumn($pesanan->getTable(), 'jadwal_pengerjaan')) {
+            try {
+                $pesanan->jadwal_pengerjaan = Carbon::parse($jadwalBaru);
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        $pesanan->status_pesanan = 'dijadwalkan';
+
+        return 'Pesanan jasa dijadwalkan.';
+    }
+
+    // Khusus jasa: pengerjaan di lokasi dimulai.
+    private function aksiMulaiKerja($pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
+    {
+        if ($tipe !== 'jasa' || ! $lunas || ! $punyaStatusPesanan
+            || in_array($statusPesanan, ['dikerjakan', 'selesai', 'dibatalkan'], true)) {
+            return null;
+        }
+
+        $pesanan->status_pesanan = 'dikerjakan';
+
+        return 'Pengerjaan jasa dimulai.';
     }
 
     private function aksiSelesai($pesanan, string $tipe, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string
