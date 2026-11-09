@@ -30,7 +30,9 @@ class PengirimanController extends Controller
             match ($status) {
                 'dikirim' => $q->where('status_pesanan', 'dikirim'),
                 'selesai' => $q->where('status_pesanan', 'selesai'),
-                default => $q->where('status_pesanan', 'diproses'),
+                // 'dibayar' = status sah di database; 'diproses' dipertahankan untuk tes lama;
+                // 'menunggu_pembayaran' + lunas = pesanan lunas sebelum status ini diselaraskan
+                default => $q->whereIn('status_pesanan', ['dibayar', 'diproses', 'menunggu_pembayaran']),
             };
         }, function ($q) use ($status) {
             // Tanpa kolom status: siap = belum ada tanggal kirim; selesai = tak ada kolom, hasil kosong

@@ -171,6 +171,15 @@ class PesananController extends Controller
             $pesanan->admin_id = $request->user()->karyawan->id;
         }
 
+        // Selaraskan dengan alur di database: pesanan produk yang baru lunas berstatus 'dibayar'
+        if ($tipe === 'produk'
+            && $punyaStatusPesanan
+            && $pesanan->status_pembayaran === 'lunas'
+            && $pesanan->getOriginal('status_pembayaran') !== 'lunas'
+            && $pesanan->status_pesanan === 'menunggu_pembayaran') {
+            $pesanan->status_pesanan = 'dibayar';
+        }
+
         // Stok produk baru dikurangi saat pembayaran dinyatakan lunas (verifikasi bukti atau konfirmasi COD)
         $baruLunas = $tipe === 'produk'
             && $pesanan->status_pembayaran === 'lunas'
