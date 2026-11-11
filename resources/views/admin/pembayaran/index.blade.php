@@ -83,10 +83,11 @@
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-3 py-3.5">
                                         @if ($item->bukti_bayar)
-                                            <a href="{{ route($ruteDetail, $item) }}" title="Lihat detail & bukti bayar">
+                                            <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipeParam, 'id' => $item->id]) }}"
+                                                target="_blank" rel="noopener" title="Buka bukti bayar ukuran penuh">
                                                 <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipeParam, 'id' => $item->id]) }}"
                                                      alt="Bukti bayar {{ $item->kode }}"
-                                                     class="h-12 w-20 rounded border border-gray-200 object-cover">
+                                                     class="h-12 w-20 rounded border border-gray-200 object-cover transition hover:border-brand-600">
                                             </a>
                                         @else
                                             <span class="text-gray-400">-</span>
@@ -101,7 +102,8 @@
                                                     <input type="hidden" name="aksi" value="verifikasi_bayar">
                                                     <button type="submit" class="font-medium text-brand-800 hover:text-brand-900">Verifikasi</button>
                                                 </form>
-                                                <form method="POST" action="{{ $ruteAksi }}">
+                                                <form method="POST" action="{{ $ruteAksi }}"
+                                                    onsubmit="return confirm('Tolak bukti bayar pesanan {{ $item->kode }}? Customer diminta mengunggah ulang.')">
                                                     @csrf
                                                     <input type="hidden" name="dari" value="pembayaran">
                                                     <input type="hidden" name="aksi" value="tolak_bayar">
@@ -110,7 +112,8 @@
                                             @endif
 
                                             @if ($item->metode_pembayaran === 'cod' && $item->status_pembayaran === 'menunggu_bayar')
-                                                <form method="POST" action="{{ $ruteAksi }}">
+                                                <form method="POST" action="{{ $ruteAksi }}"
+                                                    onsubmit="return confirm('Konfirmasi pesanan {{ $item->kode }} (COD) sudah dibayar lunas?')">
                                                     @csrf
                                                     <input type="hidden" name="dari" value="pembayaran">
                                                     <input type="hidden" name="aksi" value="konfirmasi_cod">

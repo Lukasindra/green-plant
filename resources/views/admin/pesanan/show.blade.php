@@ -81,6 +81,11 @@
                     <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
                          alt="Bukti pembayaran {{ $pesanan->kode }}"
                          class="h-64 w-full bg-gray-50 object-contain">
+                    <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
+                        target="_blank" rel="noopener"
+                        class="flex items-center justify-center gap-1 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-brand-800">
+                        Buka ukuran penuh &#8599;
+                    </a>
                 </div>
             @else
                 <p class="mb-4 rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">Belum ada bukti pembayaran yang diunggah.</p>
@@ -95,7 +100,8 @@
                             <input type="hidden" name="aksi" value="verifikasi_bayar">
                             <x-button class="w-full">Verifikasi Bukti Bayar</x-button>
                         </form>
-                        <form method="POST" action="{{ $ruteAksi }}">
+                        <form method="POST" action="{{ $ruteAksi }}"
+                            onsubmit="return confirm('Tolak bukti bayar pesanan {{ $pesanan->kode }}? Customer diminta mengunggah ulang.')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="tolak_bayar">
@@ -104,7 +110,8 @@
                     @endif
 
                     @if ($pesanan->metode_pembayaran === 'cod' && $pesanan->status_pembayaran === 'menunggu_bayar')
-                        <form method="POST" action="{{ $ruteAksi }}">
+                        <form method="POST" action="{{ $ruteAksi }}"
+                            onsubmit="return confirm('Konfirmasi pesanan {{ $pesanan->kode }} (COD) sudah dibayar lunas?')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="konfirmasi_cod">

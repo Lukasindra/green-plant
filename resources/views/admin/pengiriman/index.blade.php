@@ -88,8 +88,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-10 text-center text-gray-500">
-                                    Tidak ada pesanan pada status {{ strtolower($statusTab[$status]) }}.
+                                <td colspan="6" class="px-5 py-14 text-center">
+                                    <p class="font-semibold text-gray-800">
+                                        Tidak ada pesanan pada status {{ strtolower($statusTab[$status]) }}.
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500">Pilih tab status lain di atas untuk melihat daftar pengiriman lainnya.</p>
                                 </td>
                             </tr>
                         @endforelse

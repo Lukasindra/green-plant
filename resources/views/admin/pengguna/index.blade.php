@@ -88,7 +88,22 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-10 text-center text-gray-500">Tidak ada pengguna ditemukan.</td>
+                                <td colspan="5" class="px-5 py-14 text-center">
+                                    <p class="font-semibold text-gray-800">
+                                        @if ($kata !== '')
+                                            Tidak ada hasil untuk &ldquo;{{ $kata }}&rdquo;.
+                                        @else
+                                            Belum ada pengguna.
+                                        @endif
+                                    </p>
+                                    @if ($kata !== '')
+                                        <a href="{{ route('admin.pengguna.index') }}"
+                                            class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Hapus pencarian</a>
+                                    @else
+                                        <a href="{{ route('admin.pengguna.create') }}"
+                                            class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Tambah pengguna pertama</a>
+                                    @endif
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
