@@ -31,6 +31,11 @@
 
     @php
         // [nama, nama route (null = halaman belum dibuat), ikon, pola route aktif]
+        $labelRole = match (auth()->user()->role) {
+            'admin' => 'Administrator',
+            'kurir' => 'Kurir',
+            default => 'Pelanggan',
+        };
         $adminMenu = [
             ['Dashboard', 'admin.dashboard', '▦', 'admin.dashboard'],
             ['Produk', 'admin.produk.index', '♧', 'admin.produk.*'],
@@ -100,7 +105,7 @@
                     </span>
                     <span class="hidden text-left sm:block">
                         <span class="block text-sm font-semibold text-gray-900">{{ auth()->user()->nama }}</span>
-                        <span class="block text-xs text-gray-500">Administrator</span>
+                        <span class="block text-xs text-gray-500">{{ $labelRole }}</span>
                     </span>
                 </span>
             </div>
@@ -170,6 +175,20 @@
             });
             refreshAria();
         })();
+
+        // Anti double-submit: kunci tombol submit form POST selama diproses.
+        // Form yang dibatalkan lewat confirm() (defaultPrevented) tidak ikut dikunci.
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if ((form.getAttribute('method') || '').toLowerCase() !== 'post') return;
+            if (e.defaultPrevented) return;
+            var tombol = form.querySelector('button:not([type]), button[type="submit"]');
+            if (!tombol || tombol.disabled) return;
+            tombol.disabled = true;
+            if (!tombol.dataset.labelAsli) tombol.dataset.labelAsli = tombol.textContent;
+            tombol.textContent = 'Memproses…';
+        });
     </script>
 </body>
 </html>
