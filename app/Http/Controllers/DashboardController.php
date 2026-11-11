@@ -60,6 +60,10 @@ class DashboardController extends Controller
             })
             ->implode(' ');
 
+        // Kartu tindakan: pembayaran yang perlu diverifikasi dan produk dengan stok rendah
+        $menungguVerifikasi = $this->hitungMenungguVerifikasi();
+        $stokRendah = $this->produkStokRendah();
+
         return view('admin.dashboard', [
             'jumlahPesanan' => PesananProduk::count() + PesananJasa::count(),
             'jumlahProduk' => Produk::count(),
@@ -69,7 +73,37 @@ class DashboardController extends Controller
             'salesChart' => $salesChart,
             'chartPoints' => $chartPoints,
             'puncakNilai' => $puncakNilai,
+            'menungguVerifikasi' => $menungguVerifikasi,
+            'stokRendah' => $stokRendah,
         ]);
+    }
+
+    // Jumlah pesanan (produk + jasa) yang bukti bayarnya menunggu diverifikasi admin
+    private function hitungMenungguVerifikasi(): int
+    {
+        $jumlah = 0;
+
+        foreach ([PesananProduk::class, PesananJasa::class] as $model) {
+            if (Schema::hasColumn((new $model)->getTable(), 'status_pembayaran')) {
+                $jumlah += $model::query()->where('status_pembayaran', 'menunggu_verifikasi')->count();
+            }
+        }
+
+        return $jumlah;
+    }
+
+    // Produk dengan stok paling tipis, untuk peringatan di dashboard
+    private function produkStokRendah(): Collection
+    {
+        if (! Schema::hasTable('produk')) {
+            return collect();
+        }
+
+        return Produk::query()
+            ->where('stok', '<=', 5)
+            ->orderBy('stok')
+            ->limit(5)
+            ->get(['id', 'nama', 'stok']);
     }
 
     private function pesananTerbaru(string $model, string $tipe): Collection

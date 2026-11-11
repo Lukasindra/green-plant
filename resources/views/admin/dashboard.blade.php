@@ -63,6 +63,36 @@
         </x-card>
     </section>
 
+    @if ($menungguVerifikasi > 0 || $stokRendah->isNotEmpty())
+        <section aria-label="Perlu tindakan" class="grid gap-4 sm:grid-cols-2">
+            @if ($menungguVerifikasi > 0)
+                <a href="{{ route('admin.pembayaran.index', ['jenis' => 'menunggu_verifikasi']) }}"
+                    class="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:bg-amber-100">
+                    <span class="rounded-lg bg-amber-100 p-3 text-xl text-amber-700" aria-hidden="true">&#9203;</span>
+                    <span class="min-w-0">
+                        <span class="block font-semibold text-amber-900">{{ $menungguVerifikasi }} pembayaran menunggu verifikasi</span>
+                        <span class="mt-0.5 block text-xs text-amber-700">Periksa bukti bayar &amp; konfirmasi COD sekarang &rarr;</span>
+                    </span>
+                </a>
+            @endif
+
+            @if ($stokRendah->isNotEmpty())
+                <a href="{{ route('admin.produk.index') }}"
+                    class="flex items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:bg-red-100">
+                    <span class="rounded-lg bg-red-100 p-3 text-xl text-red-700" aria-hidden="true">&#9888;</span>
+                    <span class="min-w-0">
+                        <span class="block font-semibold text-red-900">
+                            {{ $stokRendah->count() }} produk stok rendah ({{ number_format($stokRendah->min('stok')) }} tersisa)
+                        </span>
+                        <span class="mt-0.5 block truncate text-xs text-red-700">
+                            {{ $stokRendah->pluck('nama')->implode(', ') }} &mdash; kelola stok &rarr;
+                        </span>
+                    </span>
+                </a>
+            @endif
+        </section>
+    @endif
+
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.9fr)]">
         <x-panel judul="Pesanan Terbaru" subjudul="Pesanan produk dan jasa yang baru dibuat">
 
