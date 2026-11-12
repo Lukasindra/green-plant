@@ -136,10 +136,35 @@
     </main>
 
     <footer class="mt-8 bg-brand-900 text-brand-100">
-        <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm md:flex-row">
-            <x-logo :terang="true" />
-            <p class="text-brand-200">Solusi hijau untuk taman impian Anda.</p>
-            <p class="text-xs text-brand-200/80">&copy; {{ date('Y') }} Green Plant</p>
+        <div class="mx-auto max-w-6xl px-4 py-8">
+            <div class="grid gap-8 sm:grid-cols-3">
+                <div>
+                    <x-logo :terang="true" />
+                    <p class="mt-2 text-sm text-brand-200">Solusi hijau untuk taman impian Anda.</p>
+                </div>
+
+                <nav aria-label="Tautan cepat">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-brand-200">Jelajahi</p>
+                    <ul class="mt-3 space-y-2 text-sm">
+                        <li><a href="{{ route('produk.index') }}" class="text-brand-100/90 hover:text-white hover:underline">Produk</a></li>
+                        <li><a href="{{ route('jasa.index') }}" class="text-brand-100/90 hover:text-white hover:underline">Jasa</a></li>
+                        <li><a href="{{ route('tentang') }}" class="text-brand-100/90 hover:text-white hover:underline">Tentang Kami</a></li>
+                    </ul>
+                </nav>
+
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-brand-200">Metode Pembayaran</p>
+                    <ul class="mt-3 flex flex-wrap gap-2">
+                        @foreach (config('toko.metode') as $namaMetode)
+                            <li class="rounded-full border border-white/20 px-3 py-1 text-xs text-brand-100/90">{{ $namaMetode }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 border-t border-white/10 pt-4 text-center text-xs text-brand-200/80">
+                &copy; {{ date('Y') }} Green Plant
+            </div>
         </div>
     </footer>
 

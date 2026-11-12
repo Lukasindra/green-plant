@@ -33,12 +33,18 @@
             @if (filled($kategoriAktif)) <input type="hidden" name="kategori" value="{{ $kategoriAktif }}"> @endif
             @if (filled($urut)) <input type="hidden" name="urut" value="{{ $urut }}"> @endif
 
-            <input type="range" name="maks" min="0" max="1000000" step="5000" value="{{ $maks }}"
+            <input type="range" id="slider-maks" name="maks" min="0" max="1000000" step="5000" value="{{ $maks }}"
                    class="w-full accent-brand-700"
-                   oninput="document.getElementById('label-maks').textContent = 'Rp ' + Number(this.value).toLocaleString('id-ID')">
+                   oninput="document.getElementById('input-maks').value = this.value">
+            <div class="mt-2 flex items-center gap-2">
+                <label for="input-maks" class="shrink-0 text-xs text-gray-500">Maks (Rp)</label>
+                <input type="number" id="input-maks" min="0" max="1000000" step="5000" value="{{ $maks }}"
+                       class="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
+                       oninput="document.getElementById('slider-maks').value = Math.min(1000000, Math.max(0, Number(this.value) || 0))">
+            </div>
             <div class="mt-1 flex justify-between text-xs text-gray-500">
                 <span>Rp 0</span>
-                <span id="label-maks">Rp {{ number_format($maks, 0, ',', '.') }}</span>
+                <span>Rp 1.000.000</span>
             </div>
             <x-button class="mt-3 w-full">Filter</x-button>
         </form>
