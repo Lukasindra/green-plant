@@ -6,33 +6,24 @@
 <div class="grid gap-6 md:grid-cols-[220px_1fr]">
 
     {{-- Sidebar filter --}}
-    <aside class="space-y-4">
-        <form method="GET" action="{{ route('jasa.index') }}" class="rounded-xl border border-gray-200 bg-white p-4">
-            @if (filled($kategoriAktif)) <input type="hidden" name="kategori" value="{{ $kategoriAktif }}"> @endif
-            <label for="q-jasa" class="mb-2 block text-sm font-semibold">Cari Jasa</label>
-            <input id="q-jasa" type="search" name="q" value="{{ $q ?? '' }}" placeholder="Nama atau deskripsi…"
-                   class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-        </form>
-
-        <div class="rounded-xl border border-gray-200 bg-white p-4">
-            <h2 class="mb-3 text-sm font-semibold">Kategori</h2>
-            <ul class="space-y-1 text-sm">
+    <aside class="rounded-xl border border-gray-200 bg-white p-4">
+        <h2 class="mb-3 text-sm font-semibold">Kategori</h2>
+        <ul class="space-y-1 text-sm">
+            <li>
+                <a href="{{ route('jasa.index', array_filter(request()->except(['page', 'kategori']))) }}"
+                   class="block rounded-md px-3 py-2 {{ blank($kategoriAktif) ? 'bg-brand-100 font-medium text-brand-800' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Semua Kategori
+                </a>
+            </li>
+            @foreach ($kategori as $k)
                 <li>
-                    <a href="{{ route('jasa.index', array_filter(request()->except(['page', 'kategori']))) }}"
-                       class="block rounded-md px-3 py-2 {{ blank($kategoriAktif) ? 'bg-brand-100 font-medium text-brand-800' : 'text-gray-600 hover:bg-gray-100' }}">
-                        Semua Kategori
+                    <a href="{{ route('jasa.index', array_merge(request()->except(['page', 'kategori']), ['kategori' => $k->id])) }}"
+                       class="block rounded-md px-3 py-2 {{ $kategoriAktif == $k->id ? 'bg-brand-100 font-medium text-brand-800' : 'text-gray-600 hover:bg-gray-100' }}">
+                        {{ $k->nama }}
                     </a>
                 </li>
-                @foreach ($kategori as $k)
-                    <li>
-                        <a href="{{ route('jasa.index', array_merge(request()->except(['page', 'kategori']), ['kategori' => $k->id])) }}"
-                           class="block rounded-md px-3 py-2 {{ $kategoriAktif == $k->id ? 'bg-brand-100 font-medium text-brand-800' : 'text-gray-600 hover:bg-gray-100' }}">
-                            {{ $k->nama }}
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
+            @endforeach
+        </ul>
     </aside>
 
     {{-- Daftar jasa --}}
