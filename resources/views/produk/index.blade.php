@@ -40,7 +40,8 @@
                 <label for="input-maks" class="shrink-0 text-xs text-gray-500">Maks (Rp)</label>
                 <input type="number" id="input-maks" min="0" max="1000000" step="5000" value="{{ $maks }}"
                        class="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
-                       oninput="document.getElementById('slider-maks').value = Math.min(1000000, Math.max(0, Number(this.value) || 0))">
+                       oninput="document.getElementById('slider-maks').value = Math.min(1000000, Math.max(0, Number(this.value) || 0))"
+                       onchange="var v = Math.min(1000000, Math.max(0, Number(this.value) || 0)); this.value = v; document.getElementById('slider-maks').value = v;">
             </div>
             <div class="mt-1 flex justify-between text-xs text-gray-500">
                 <span>Rp 0</span>

@@ -92,7 +92,7 @@
         </form>
     </aside>
 
-    <div id="sb-main" class="flex min-h-screen flex-col">
+    <div id="sb-main" tabindex="-1" class="flex min-h-screen flex-col outline-none">
         <header class="sticky top-0 z-20 flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
             <button id="sb-toggle" type="button" aria-controls="sb" aria-expanded="true" aria-label="Buka atau tutup menu"
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-600 transition hover:bg-gray-100 hover:text-gray-900">

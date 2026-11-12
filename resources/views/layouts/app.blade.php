@@ -55,7 +55,7 @@
                     <input id="q" type="search" name="q" value="{{ request('q') }}"
                         placeholder="{{ $cariJasa ? 'Cari jasa…' : 'Cari produk…' }}"
                         class="w-40 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                    @if ($cariJasa && filled(request('kategori')))
+                    @if (filled(request('kategori')))
                         <input type="hidden" name="kategori" value="{{ request('kategori') }}">
                     @endif
                 </form>
@@ -106,7 +106,7 @@
                 <input id="q-mobile" type="search" name="q" value="{{ request('q') }}"
                     placeholder="{{ $cariJasa ? 'Cari jasa…' : 'Cari produk…' }}"
                     class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                @if ($cariJasa && filled(request('kategori')))
+                @if (filled(request('kategori')))
                     <input type="hidden" name="kategori" value="{{ request('kategori') }}">
                 @endif
             </form>
