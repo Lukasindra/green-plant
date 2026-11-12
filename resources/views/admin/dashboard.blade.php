@@ -25,7 +25,7 @@
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahPesanan) }}</p>
                     <p class="mt-1 text-xs text-gray-500">Produk + jasa</p>
                 </div>
-                <span class="rounded-lg bg-emerald-50 p-3 text-xl text-brand-700" aria-hidden="true">▤</span>
+                <span class="rounded-lg bg-emerald-50 p-3 text-emerald-700" aria-hidden="true"><x-sidebar-ikon nama="pesanan" class="h-6 w-6" /></span>
             </div>
         </x-card>
 
@@ -36,7 +36,7 @@
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahProduk) }}</p>
                     <p class="mt-1 text-xs text-gray-500">Item katalog</p>
                 </div>
-                <span class="rounded-lg bg-lime-50 p-3 text-xl text-lime-700" aria-hidden="true">♧</span>
+                <span class="rounded-lg bg-lime-50 p-3 text-lime-700" aria-hidden="true"><x-sidebar-ikon nama="produk" class="h-6 w-6" /></span>
             </div>
         </x-card>
 
@@ -47,7 +47,7 @@
                     <p class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($jumlahJasa) }}</p>
                     <p class="mt-1 text-xs text-gray-500">Item katalog</p>
                 </div>
-                <span class="rounded-lg bg-teal-50 p-3 text-xl text-teal-700" aria-hidden="true">⚒</span>
+                <span class="rounded-lg bg-teal-50 p-3 text-teal-700" aria-hidden="true"><x-sidebar-ikon nama="jasa" class="h-6 w-6" /></span>
             </div>
         </x-card>
 
@@ -58,7 +58,7 @@
                     <p class="mt-3 text-2xl font-bold text-brand-800">Rp {{ number_format($pendapatanBulanIni, 0, ',', '.') }}</p>
                     <p class="mt-1 text-xs text-gray-500">Bulan ini (pesanan lunas)</p>
                 </div>
-                <span class="rounded-lg bg-green-50 p-3 text-xl text-green-700" aria-hidden="true">Rp</span>
+                <span class="rounded-lg bg-green-50 p-3 text-green-700" aria-hidden="true"><x-sidebar-ikon nama="pembayaran" class="h-6 w-6" /></span>
             </div>
         </x-card>
     </section>
@@ -68,7 +68,7 @@
             @if ($menungguVerifikasi > 0)
                 <a href="{{ route('admin.pembayaran.index', ['jenis' => 'menunggu_verifikasi']) }}"
                     class="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:bg-amber-100">
-                    <span class="rounded-lg bg-amber-100 p-3 text-xl text-amber-700" aria-hidden="true">&#9203;</span>
+                    <span class="rounded-lg bg-amber-100 p-3 text-amber-700" aria-hidden="true"><x-sidebar-ikon nama="jam" class="h-6 w-6" /></span>
                     <span class="min-w-0">
                         <span class="block font-semibold text-amber-900">{{ $menungguVerifikasi }} pembayaran menunggu verifikasi</span>
                         <span class="mt-0.5 block text-xs text-amber-700">Periksa bukti bayar &amp; konfirmasi COD sekarang &rarr;</span>
@@ -79,7 +79,7 @@
             @if ($stokRendah->isNotEmpty())
                 <a href="{{ route('admin.produk.index') }}"
                     class="flex items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm transition hover:bg-red-100">
-                    <span class="rounded-lg bg-red-100 p-3 text-xl text-red-700" aria-hidden="true">&#9888;</span>
+                    <span class="rounded-lg bg-red-100 p-3 text-red-700" aria-hidden="true"><x-sidebar-ikon nama="peringatan" class="h-6 w-6" /></span>
                     <span class="min-w-0">
                         <span class="block font-semibold text-red-900">
                             {{ $stokRendah->count() }} produk stok rendah ({{ number_format($stokRendah->min('stok')) }} tersisa)

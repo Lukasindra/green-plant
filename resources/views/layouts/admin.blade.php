@@ -37,15 +37,15 @@
             default => 'Pelanggan',
         };
         $adminMenu = [
-            ['Dashboard', 'admin.dashboard', '▦', 'admin.dashboard'],
-            ['Produk', 'admin.produk.index', '♧', 'admin.produk.*'],
-            ['Jasa', 'admin.jasa.index', '⚒', 'admin.jasa.*'],
-            ['Pesanan', 'admin.pesanan.index', '▤', 'admin.pesanan.*'],
-            ['Pembayaran', 'admin.pembayaran.index', 'Rp', 'admin.pembayaran.*'],
-            ['Pengiriman', 'admin.pengiriman.index', '⇢', 'admin.pengiriman.*'],
-            ['Laporan', 'admin.laporan.index', '▥', 'admin.laporan.*'],
-            ['Pengguna', 'admin.pengguna.index', '☺', 'admin.pengguna.*'],
-            ['Pengaturan', 'admin.pengaturan.index', '⚙', 'admin.pengaturan.*'],
+            ['Dashboard', 'admin.dashboard', 'dashboard', 'admin.dashboard'],
+            ['Produk', 'admin.produk.index', 'produk', 'admin.produk.*'],
+            ['Jasa', 'admin.jasa.index', 'jasa', 'admin.jasa.*'],
+            ['Pesanan', 'admin.pesanan.index', 'pesanan', 'admin.pesanan.*'],
+            ['Pembayaran', 'admin.pembayaran.index', 'pembayaran', 'admin.pembayaran.*'],
+            ['Pengiriman', 'admin.pengiriman.index', 'pengiriman', 'admin.pengiriman.*'],
+            ['Laporan', 'admin.laporan.index', 'laporan', 'admin.laporan.*'],
+            ['Pengguna', 'admin.pengguna.index', 'pengguna', 'admin.pengguna.*'],
+            ['Pengaturan', 'admin.pengaturan.index', 'pengaturan', 'admin.pengaturan.*'],
         ];
     @endphp
 
@@ -66,13 +66,13 @@
                 @if ($rute)
                     <a href="{{ route($rute) }}" @if (request()->routeIs($polaAktif)) aria-current="page" @endif
                        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm {{ request()->routeIs($polaAktif) ? 'bg-white/15 font-medium' : 'text-white/80 transition hover:bg-white/10 hover:text-white' }}">
-                        <span aria-hidden="true" class="w-5 text-center">{{ $ikon }}</span>
+                        <x-sidebar-ikon :nama="$ikon" />
                         {{ $nama }}
                     </a>
                 @else
                     <span aria-disabled="true" title="Segera hadir"
                           class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/40">
-                        <span aria-hidden="true" class="w-5 text-center">{{ $ikon }}</span>
+                        <x-sidebar-ikon :nama="$ikon" />
                         {{ $nama }}
                     </span>
                 @endif
@@ -82,7 +82,7 @@
         <form method="POST" action="{{ route('logout') }}" class="border-t border-white/10 p-3">
             @csrf
             <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-white/80 transition hover:bg-white/10 hover:text-white">
-                <span aria-hidden="true" class="w-5 text-center">↪</span>
+                <x-sidebar-ikon nama="keluar" />
                 Logout
             </button>
         </form>
