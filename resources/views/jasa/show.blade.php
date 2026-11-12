@@ -44,36 +44,15 @@
               class="mt-4 space-y-4 {{ (auth()->check() && auth()->user()->isCustomer()) ? '' : 'pointer-events-none opacity-50' }}">
             @csrf
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label for="qty" class="mb-1 block text-sm font-medium">Jumlah {{ $jasa->satuan }}</label>
-                    <input type="number" id="qty" name="qty" min="1" max="10" value="{{ old('qty', 1) }}" required
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                    @error('qty') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label for="jadwal" class="mb-1 block text-sm font-medium">Jadwal pengerjaan</label>
-                    <input type="datetime-local" id="jadwal" name="jadwal" required
-                           min="{{ now()->format('Y-m-d\TH:i') }}"
-                           value="{{ old('jadwal') }}"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
-                    @error('jadwal') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-                </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <x-input nama="qty" label="Jumlah {{ $jasa->satuan }}" tipe="number" required min="1" max="10" value="{{ old('qty', 1) }}" />
+                <x-input nama="jadwal" label="Jadwal pengerjaan" tipe="datetime-local" required
+                    min="{{ now()->format('Y-m-d\TH:i') }}" value="{{ old('jadwal') }}" />
             </div>
 
-            <div>
-                <label for="alamat_lokasi" class="mb-1 block text-sm font-medium">Alamat lokasi pengerjaan</label>
-                <textarea id="alamat_lokasi" name="alamat_lokasi" rows="2" required
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">{{ old('alamat_lokasi', $alamat) }}</textarea>
-                @error('alamat_lokasi') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
+            <x-textarea nama="alamat_lokasi" label="Alamat lokasi pengerjaan" :baris="2" required>{{ old('alamat_lokasi', $alamat) }}</x-textarea>
 
-            <div>
-                <label for="catatan" class="mb-1 block text-sm font-medium">Catatan <span class="text-xs text-gray-400">(opsional)</span></label>
-                <textarea id="catatan" name="catatan" rows="2"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">{{ old('catatan') }}</textarea>
-                @error('catatan') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-            </div>
+            <x-textarea nama="catatan" label="Catatan (opsional)" :baris="2">{{ old('catatan') }}</x-textarea>
 
             <div>
                 <span class="mb-2 block text-sm font-medium">Metode pembayaran</span>
@@ -86,12 +65,10 @@
                         </label>
                     @endforeach
                 </div>
-                @error('metode_pembayaran') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
+                @error('metode_pembayaran') <p class="mt-2 text-sm text-red-700">{{ $message }}</p> @enderror
             </div>
 
-            <button type="submit" class="w-full rounded-lg bg-brand-700 py-3 text-sm font-semibold text-white hover:bg-brand-800">
-                Pesan Sekarang
-            </button>
+            <x-button class="w-full py-3">Pesan Sekarang</x-button>
             <p class="text-center text-xs text-gray-500">Pembayaran dikonfirmasi manual oleh admin setelah bukti diunggah.</p>
         </form>
     </section>

@@ -39,7 +39,7 @@
                 <span>Rp 0</span>
                 <span id="label-maks">Rp {{ number_format($maks, 0, ',', '.') }}</span>
             </div>
-            <button type="submit" class="mt-3 w-full rounded-md bg-brand-700 py-2 text-sm font-medium text-white hover:bg-brand-800">Filter</button>
+            <x-button class="mt-3 w-full">Filter</x-button>
         </form>
     </aside>
 
@@ -66,8 +66,9 @@
             </div>
             <div class="mt-6">{{ $produk->links() }}</div>
         @else
-            <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
-                Tidak ada produk yang cocok dengan filter ini.
+            <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                <p class="font-semibold text-gray-800">Tidak ada produk yang cocok dengan filter ini.</p>
+                <a href="{{ route('produk.index') }}" class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Lihat semua produk</a>
             </div>
         @endif
     </section>

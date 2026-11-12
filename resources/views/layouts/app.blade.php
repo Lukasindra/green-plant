@@ -7,6 +7,13 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=poppins:400,500,600,700" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        #menu-mobile { transform: translateX(100%); transition: transform .2s ease; }
+        #menu-backdrop { opacity: 0; transition: opacity .2s ease; }
+        html.menu-open #menu-mobile { transform: none; }
+        html.menu-open #menu-backdrop { opacity: 1; pointer-events: auto; }
+        html.menu-open { overflow: hidden; }
+    </style>
 </head>
 <body class="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-800 antialiased">
 
@@ -34,6 +41,10 @@
             </nav>
 
             <div class="flex items-center gap-4 text-gray-700">
+                <button id="menu-toggle" type="button" aria-controls="menu-mobile" aria-expanded="false" aria-label="Buka menu"
+                    class="rounded-lg p-2 transition hover:bg-gray-100 hover:text-brand-700 md:hidden">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
+                </button>
                 <a href="#" aria-label="Cari" class="hover:text-brand-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
                 </a>
@@ -65,13 +76,46 @@
                 @endauth
             </div>
         </div>
-
-        <nav class="flex gap-6 overflow-x-auto border-t border-gray-100 px-4 py-2 text-sm md:hidden">
-            @foreach ($menu as [$nama, $link, $aktif])
-                <a href="{{ $link }}" class="whitespace-nowrap {{ $aktif ? 'font-semibold text-brand-700' : 'text-gray-600' }}">{{ $nama }}</a>
-            @endforeach
-        </nav>
     </header>
+
+    <div id="menu-backdrop" class="pointer-events-none fixed inset-0 z-30 bg-black/50 md:hidden" aria-hidden="true"></div>
+
+    <div id="menu-mobile" class="fixed inset-y-0 right-0 z-40 w-64 overflow-y-auto bg-white shadow-xl md:hidden" aria-label="Menu utama">
+        <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+            <x-logo />
+            <button id="menu-close" type="button" aria-label="Tutup menu"
+                class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex flex-col gap-1 px-3 py-4">
+            @foreach ($menu as [$nama, $link, $aktif])
+                <a href="{{ $link }}" @if ($aktif) aria-current="page" @endif
+                   class="rounded-lg px-3 py-2.5 text-sm {{ $aktif ? 'bg-brand-50 font-semibold text-brand-700' : 'text-gray-600 transition hover:bg-gray-50 hover:text-brand-700' }}">
+                    {{ $nama }}
+                </a>
+            @endforeach
+
+            <div class="mt-2 border-t border-gray-100 pt-3">
+                @auth
+                    @if (auth()->user()->isCustomer())
+                        <a href="{{ route('pesanan.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Pesanan Saya</a>
+                    @endif
+                    @if (auth()->user()->isKurir())
+                        <a href="{{ route('kurir.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Tugas Antar</a>
+                    @endif
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="block w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50">Keluar</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Login</a>
+                    <a href="{{ route('daftar') }}" class="block rounded-lg px-3 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50">Daftar</a>
+                @endauth
+            </div>
+        </nav>
+    </div>
 
     <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         @if (session('status'))
@@ -91,5 +135,44 @@
             <p class="text-xs text-brand-200/80">&copy; {{ date('Y') }} Green Plant</p>
         </div>
     </footer>
+
+    <script>
+        (function () {
+            var html = document.documentElement;
+            var tombolBuka = document.getElementById('menu-toggle');
+            if (!tombolBuka) return;
+
+            function aturStatus(terbuka) {
+                html.classList.toggle('menu-open', terbuka);
+                tombolBuka.setAttribute('aria-expanded', terbuka ? 'true' : 'false');
+            }
+
+            tombolBuka.addEventListener('click', function () {
+                aturStatus(!html.classList.contains('menu-open'));
+            });
+            document.getElementById('menu-close').addEventListener('click', function () { aturStatus(false); });
+            document.getElementById('menu-backdrop').addEventListener('click', function () { aturStatus(false); });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') aturStatus(false);
+            });
+            document.querySelectorAll('#menu-mobile nav a').forEach(function (a) {
+                a.addEventListener('click', function () { aturStatus(false); });
+            });
+        })();
+
+        // Anti double-submit: kunci tombol submit form POST selama diproses.
+        // Form yang dibatalkan lewat confirm() (defaultPrevented) tidak ikut dikunci.
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            if ((form.getAttribute('method') || '').toLowerCase() !== 'post') return;
+            if (e.defaultPrevented) return;
+            var tombol = form.querySelector('button:not([type]), button[type="submit"]');
+            if (!tombol || tombol.disabled) return;
+            tombol.disabled = true;
+            if (!tombol.dataset.labelAsli) tombol.dataset.labelAsli = tombol.textContent;
+            tombol.textContent = 'Memproses…';
+        });
+    </script>
 </body>
 </html>

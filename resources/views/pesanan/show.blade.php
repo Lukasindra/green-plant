@@ -89,9 +89,9 @@
                     <input id="bukti_bayar" type="file" name="bukti_bayar" accept="image/png,image/jpeg" required
                            class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200">
                     <p class="mt-1 text-xs text-gray-500">JPG atau PNG, maksimal 2 MB.</p>
-                    @error('bukti_bayar') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('bukti_bayar') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
 
-                    <button type="submit" class="mt-3 w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Kirim Bukti</button>
+                    <x-button class="mt-3 w-full">Kirim Bukti</x-button>
                 </form>
             @endcan
 

@@ -68,20 +68,18 @@
     </div>
 
     <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <a href="{{ route('produk.index') }}" class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-medium hover:bg-gray-50">
-            &larr; Lanjut Belanja
-        </a>
+        <x-button varian="outline" href="{{ route('produk.index') }}" class="w-full sm:w-auto">&larr; Lanjut Belanja</x-button>
 
         @auth
-            <a href="{{ route('checkout.index') }}" class="rounded-lg bg-brand-700 px-8 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800">Checkout</a>
+            <x-button href="{{ route('checkout.index') }}" class="w-full sm:w-auto">Checkout</x-button>
         @else
-            <a href="{{ route('login') }}" class="rounded-lg bg-brand-700 px-8 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800">Login untuk Checkout</a>
+            <x-button href="{{ route('login') }}" class="w-full sm:w-auto">Login untuk Checkout</x-button>
         @endauth
     </div>
 @else
     <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
-        <p class="text-sm text-gray-500">Keranjang Anda masih kosong.</p>
-        <a href="{{ route('produk.index') }}" class="mt-4 inline-block rounded-lg bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Mulai Belanja</a>
+        <p class="font-semibold text-gray-800">Keranjang Anda masih kosong.</p>
+        <x-button href="{{ route('produk.index') }}" class="mt-4">Mulai Belanja</x-button>
     </div>
 @endif
 @endsection
