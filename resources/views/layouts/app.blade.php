@@ -23,7 +23,7 @@
             ['Beranda', url('/'), request()->is('/')],
             ['Produk', route('produk.index'), request()->routeIs('produk.*')],
             ['Jasa', route('jasa.index'), request()->routeIs('jasa.*')],
-            ['Tentang Kami', '#', false],
+            ['Tentang Kami', route('tentang'), request()->routeIs('tentang')],
         ];
     @endphp
 
@@ -45,9 +45,11 @@
                     class="rounded-lg p-2 transition hover:bg-gray-100 hover:text-brand-700 md:hidden">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round"/></svg>
                 </button>
-                <a href="#" aria-label="Cari" class="hover:text-brand-700">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                </a>
+                <form method="GET" action="{{ route('produk.index') }}" class="hidden md:flex">
+                    <label for="q" class="sr-only">Cari produk</label>
+                    <input id="q" type="search" name="q" value="{{ request('q') }}" placeholder="Cari produk…"
+                        class="w-40 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                </form>
                 <a href="{{ route('keranjang.index') }}" aria-label="Keranjang" class="relative hover:text-brand-700">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.8a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1.2"/><circle cx="17" cy="20" r="1.2"/></svg>
                     @if ($jumlahKeranjang > 0)
@@ -90,6 +92,11 @@
         </div>
 
         <nav class="flex flex-col gap-1 px-3 py-4">
+            <form method="GET" action="{{ route('produk.index') }}" class="mb-2">
+                <label for="q-mobile" class="sr-only">Cari produk</label>
+                <input id="q-mobile" type="search" name="q" value="{{ request('q') }}" placeholder="Cari produk…"
+                    class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+            </form>
             @foreach ($menu as [$nama, $link, $aktif])
                 <a href="{{ $link }}" @if ($aktif) aria-current="page" @endif
                    class="rounded-lg px-3 py-2.5 text-sm {{ $aktif ? 'bg-brand-50 font-semibold text-brand-700' : 'text-gray-600 transition hover:bg-gray-50 hover:text-brand-700' }}">

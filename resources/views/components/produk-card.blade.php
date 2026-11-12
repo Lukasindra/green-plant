@@ -1,10 +1,12 @@
 @props(['produk'])
 <div class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-    <div class="aspect-square bg-gray-50">
+    <a href="{{ route('produk.show', $produk) }}" class="block aspect-square bg-gray-50" title="Lihat detail {{ $produk->nama }}">
         <x-gambar-produk :foto="$produk->foto" :nama="$produk->nama" />
-    </div>
+    </a>
     <div class="flex flex-1 flex-col p-3">
-        <h3 class="text-sm font-semibold text-gray-900">{{ $produk->nama }}</h3>
+        <h3 class="text-sm font-semibold text-gray-900">
+            <a href="{{ route('produk.show', $produk) }}" class="hover:text-brand-700">{{ $produk->nama }}</a>
+        </h3>
         <p class="text-xs text-gray-500">{{ $produk->kategori?->nama }}</p>
         <p class="mt-2 text-sm font-semibold text-gray-900">Rp {{ number_format($produk->harga, 0, ',', '.') }}</p>
 

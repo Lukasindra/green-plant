@@ -15,12 +15,21 @@ class JasaController extends Controller
     public function index(Request $request)
     {
         $data = $request->validate([
+            'q'        => ['nullable', 'string', 'max:100'],
             'kategori' => ['nullable', 'integer'],
         ]);
 
         $kategoriAktif = $data['kategori'] ?? null;
+        $q             = trim((string) ($data['q'] ?? ''));
 
         $query = Jasa::with('kategori')->orderByDesc('id');
+
+        if ($q !== '') {
+            $query->where(function ($cari) use ($q) {
+                $cari->where('nama', 'like', "%{$q}%")
+                    ->orWhere('deskripsi', 'like', "%{$q}%");
+            });
+        }
 
         if ($kategoriAktif) {
             $query->where('kategori_id', $kategoriAktif);
@@ -30,6 +39,7 @@ class JasaController extends Controller
             'jasa'          => $query->paginate(12)->withQueryString(),
             'kategori'      => Kategori::where('tipe', 'jasa')->orderBy('nama')->get(),
             'kategoriAktif' => $kategoriAktif,
+            'q'             => $q,
         ]);
     }
 

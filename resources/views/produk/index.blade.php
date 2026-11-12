@@ -29,6 +29,7 @@
 
         <form method="GET" action="{{ route('produk.index') }}" class="rounded-xl border border-gray-200 bg-white p-4">
             <h2 class="mb-3 text-sm font-semibold">Rentang Harga</h2>
+            @if (filled($q)) <input type="hidden" name="q" value="{{ $q }}"> @endif
             @if (filled($kategoriAktif)) <input type="hidden" name="kategori" value="{{ $kategoriAktif }}"> @endif
             @if (filled($urut)) <input type="hidden" name="urut" value="{{ $urut }}"> @endif
 
@@ -48,6 +49,7 @@
         <div class="mb-4 flex items-center justify-between">
             <h1 class="text-xl font-semibold">Produk</h1>
             <form method="GET" action="{{ route('produk.index') }}" class="text-sm">
+                @if (filled($q)) <input type="hidden" name="q" value="{{ $q }}"> @endif
                 @if (filled($kategoriAktif)) <input type="hidden" name="kategori" value="{{ $kategoriAktif }}"> @endif
                 <input type="hidden" name="maks" value="{{ $maks }}">
                 <select name="urut" onchange="this.form.submit()" class="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm">

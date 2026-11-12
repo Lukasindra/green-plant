@@ -21,8 +21,10 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/produk');
 
 Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
+Route::get('/produk/{produk}', [ProdukController::class, 'show'])->name('produk.show');
 Route::get('/jasa', [JasaController::class, 'index'])->name('jasa.index');
 Route::get('/jasa/{jasa}', [JasaController::class, 'show'])->name('jasa.show');
+Route::view('/tentang', 'tentang.index')->name('tentang');
 Route::get('/admin/dashboard', DashboardController::class)->middleware(['auth', 'role:admin'])->name('admin.dashboard');
 
 // Kelola produk (admin)
