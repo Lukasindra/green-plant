@@ -38,7 +38,15 @@
                         <input type="hidden" name="aksi" value="kurang">
                         <button type="submit" aria-label="Kurangi" class="h-7 w-7 rounded border border-gray-300 text-sm hover:bg-gray-100">&minus;</button>
                     </form>
-                    <span class="w-8 text-center text-sm">{{ $b['qty'] }}</span>
+                    <form method="POST" action="{{ route('keranjang.ubah') }}" onchange="this.submit()">
+                        @csrf
+                        <input type="hidden" name="produk_id" value="{{ $p->id }}">
+                        <input type="hidden" name="aksi" value="atur">
+                        <label for="qty-{{ $p->id }}" class="sr-only">Jumlah {{ $p->nama }}</label>
+                        <input id="qty-{{ $p->id }}" type="number" name="qty" min="1" max="{{ max(1, $p->stok) }}"
+                            value="{{ $b['qty'] }}" required
+                            class="w-10 rounded border border-gray-300 px-0.5 py-1 text-center text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                    </form>
                     <form method="POST" action="{{ route('keranjang.ubah') }}">
                         @csrf
                         <input type="hidden" name="produk_id" value="{{ $p->id }}">

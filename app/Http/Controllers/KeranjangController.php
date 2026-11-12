@@ -65,7 +65,8 @@ class KeranjangController extends Controller
     {
         $data = $request->validate([
             'produk_id' => ['required', 'integer', 'exists:produk,id'],
-            'aksi'      => ['required', 'in:tambah,kurang'],
+            'aksi'      => ['required', 'in:tambah,kurang,atur'],
+            'qty'       => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
 
         $produk = Produk::findOrFail($data['produk_id']);
@@ -80,6 +81,13 @@ class KeranjangController extends Controller
                 return back()->with('error', "Stok {$produk->nama} hanya {$produk->stok}.");
             }
             $cart[$produk->id]++;
+        } elseif ($data['aksi'] === 'atur') {
+            $qty = (int) $request->input('qty');
+            if ($qty < 1) return back();
+            if ($qty > $produk->stok) {
+                return back()->with('error', "Stok {$produk->nama} hanya {$produk->stok}.");
+            }
+            $cart[$produk->id] = $qty;
         } else {
             $cart[$produk->id] = max(1, $cart[$produk->id] - 1);
         }

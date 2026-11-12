@@ -1,4 +1,5 @@
 ﻿<?php
+use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Admin\JasaController as AdminJasaController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PengaturanController as AdminPengaturanController;
@@ -18,7 +19,7 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\JasaController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/produk');
+Route::get('/', BerandaController::class)->name('beranda');
 
 Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
 Route::get('/produk/{produk}', [ProdukController::class, 'show'])->name('produk.show');
