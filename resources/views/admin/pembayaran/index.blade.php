@@ -51,7 +51,11 @@
 
         <x-panel>
             @if ($pesanan->isEmpty())
-                <p class="px-6 py-14 text-center text-sm text-gray-500">Tidak ada pembayaran pada status ini.</p>
+                <div class="px-6 py-14 text-center">
+                    <p class="font-semibold text-gray-800">Tidak ada pembayaran pada status ini.</p>
+                    <a href="{{ route('admin.pembayaran.index') }}"
+                        class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Lihat semua pembayaran</a>
+                </div>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[52rem] text-left text-sm">

@@ -8,6 +8,27 @@
     @endphp
 
     <div class="space-y-6">
+        @php
+            $hariIniLap = \Carbon\CarbonImmutable::today();
+            $presetLaporan = [
+                '7 hari terakhir' => [$hariIniLap->subDays(6)->toDateString(), $hariIniLap->toDateString()],
+                '30 hari terakhir' => [$hariIniLap->subDays(29)->toDateString(), $hariIniLap->toDateString()],
+                'Bulan ini' => [$hariIniLap->startOfMonth()->toDateString(), $hariIniLap->toDateString()],
+            ];
+        @endphp
+
+        {{-- Preset periode cepat --}}
+        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Preset periode cepat">
+            <span class="text-xs font-medium text-gray-500">Preset:</span>
+            @foreach ($presetLaporan as $labelPreset => [$awalPreset, $akhirPreset])
+                <a href="{{ route('admin.laporan.index', ['awal' => $awalPreset, 'akhir' => $akhirPreset]) }}"
+                    @if ($awal === $awalPreset && $akhir === $akhirPreset) aria-current="page" @endif
+                    class="rounded-full px-3 py-1.5 text-xs font-medium {{ $awal === $awalPreset && $akhir === $akhirPreset ? 'bg-brand-700 text-white' : 'border border-gray-300 bg-white text-gray-600 hover:bg-gray-50' }}">
+                    {{ $labelPreset }}
+                </a>
+            @endforeach
+        </div>
+
         {{-- Filter periode --}}
         <form method="GET" action="{{ route('admin.laporan.index') }}"
             class="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
