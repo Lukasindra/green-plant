@@ -8,6 +8,35 @@
     <a href="{{ route('pesanan.index') }}" class="text-sm text-brand-700 hover:underline">&larr; Semua pesanan</a>
 </div>
 
+@if ($pesanan->status_pesanan !== 'dibatalkan')
+    @php
+        $progres = ['Dibuat', 'Lunas', 'Dikirim', 'Selesai'];
+        $capai = [
+            true,
+            $pesanan->status_pembayaran === 'lunas',
+            in_array($pesanan->status_pesanan, ['dikirim', 'selesai'], true),
+            $pesanan->status_pesanan === 'selesai',
+        ];
+    @endphp
+    <section class="mb-6 rounded-xl border border-gray-200 bg-white p-5" aria-label="Progres pesanan">
+        <ol class="grid grid-cols-4 gap-2 text-center">
+            @foreach ($progres as $i => $label)
+                @php
+                    $tercapai = $capai[$i];
+                    $tengah = ! $tercapai && ($i === 0 || $capai[$i - 1]);
+                @endphp
+                <li class="flex flex-col items-center gap-1.5 text-xs">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full font-semibold
+                        {{ $tercapai ? 'bg-brand-700 text-white' : ($tengah ? 'border-2 border-amber-500 bg-amber-50 text-amber-600' : 'border-2 border-gray-200 text-gray-400') }}">
+                        {{ $tercapai ? '&#10003;' : $i + 1 }}
+                    </span>
+                    <span class="{{ $tercapai ? 'font-medium text-gray-800' : ($tengah ? 'font-medium text-amber-700' : 'text-gray-500') }}">{{ $label }}</span>
+                </li>
+            @endforeach
+        </ol>
+    </section>
+@endif
+
 <div class="grid gap-6 lg:grid-cols-2">
 
     {{-- Detail pesanan --}}
@@ -87,8 +116,11 @@
                     @csrf
                     <label for="bukti_bayar" class="mb-1 block text-sm font-medium">Unggah bukti pembayaran</label>
                     <input id="bukti_bayar" type="file" name="bukti_bayar" accept="image/png,image/jpeg" required
-                           class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200">
+                           class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200"
+                           onchange="var p=document.getElementById('pratinjau-bukti'); if (this.files && this.files[0]) { p.src = URL.createObjectURL(this.files[0]); p.classList.remove('hidden'); } else { p.src = ''; p.classList.add('hidden'); }">
                     <p class="mt-1 text-xs text-gray-500">JPG atau PNG, maksimal 2 MB.</p>
+                    <img id="pratinjau-bukti" src="" alt="Pratinjau bukti pembayaran"
+                         class="mt-2 hidden max-h-48 w-full rounded-lg border border-gray-200 bg-gray-50 object-contain">
                     @error('bukti_bayar') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
 
                     <x-button class="mt-3 w-full">Kirim Bukti</x-button>

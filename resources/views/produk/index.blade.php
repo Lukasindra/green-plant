@@ -50,7 +50,7 @@
         </form>
     </aside>
 
-    {{-- Daftar produk --}}
+        {{-- Daftar produk --}}
     <section>
         <div class="mb-4 flex items-center justify-between">
             <h1 class="text-xl font-semibold">Produk</h1>
@@ -65,6 +65,14 @@
                 </select>
             </form>
         </div>
+
+        @if (filled($q))
+            <div class="mb-4 flex items-center gap-2">
+                <span class="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-800">Pencarian: &ldquo;{{ $q }}&rdquo;</span>
+                <a href="{{ route('produk.index', array_filter(request()->except(['page', 'q']))) }}"
+                    class="text-xs text-gray-500 hover:text-brand-700">Hapus &times;</a>
+            </div>
+        @endif
 
         @if ($produk->count())
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">

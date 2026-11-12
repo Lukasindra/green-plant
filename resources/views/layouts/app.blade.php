@@ -16,6 +16,10 @@
     </style>
 </head>
 <body class="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-800 antialiased">
+<a href="#isi-utama"
+    class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+    Langsung ke konten
+</a>
 
     @php
         $jumlahKeranjang = array_sum(session('cart', []));
@@ -124,7 +128,7 @@
         </nav>
     </div>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+    <main id="isi-utama" tabindex="-1" class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none">
         @if (session('status'))
             <div class="mb-4 rounded-md border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">{{ session('status') }}</div>
         @endif
