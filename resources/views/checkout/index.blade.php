@@ -38,7 +38,7 @@
     <section class="rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="mb-3 text-sm font-semibold">Pilih Metode Pembayaran</h2>
 
-        <div class="space-y-2">
+        <div class="space-y-2" role="radiogroup" aria-label="Metode pembayaran">
             @foreach (config('toko.metode') as $kode => $nama)
                 <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm hover:bg-gray-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
                     <input type="radio" name="metode_pembayaran" value="{{ $kode }}" class="accent-brand-700"

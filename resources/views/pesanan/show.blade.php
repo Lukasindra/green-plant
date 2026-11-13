@@ -100,7 +100,7 @@
                 @case('qris')
                     <p class="mb-2 text-sm">Scan kode QRIS dan bayar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong>.</p>
                     @if (file_exists(public_path(config('toko.qris_gambar'))))
-                        <img src="{{ asset(config('toko.qris_gambar')) }}" alt="QRIS Green Plant" class="mx-auto h-48 w-48 rounded-md border border-gray-200 object-contain">
+                        <img src="{{ asset(config('toko.qris_gambar')) }}" alt="QRIS Green Plant" class="mx-auto h-48 w-48 rounded-md border border-gray-200 object-contain" decoding="async">
                     @else
                         <p class="rounded-md bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">Kode QRIS belum dipasang.</p>
                     @endif

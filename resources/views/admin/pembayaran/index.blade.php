@@ -91,7 +91,8 @@
                                                 target="_blank" rel="noopener" title="Buka bukti bayar ukuran penuh">
                                                 <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipeParam, 'id' => $item->id]) }}"
                                                      alt="Bukti bayar {{ $item->kode }}"
-                                                     class="h-12 w-20 rounded border border-gray-200 object-cover transition hover:border-brand-600">
+                                                     class="h-12 w-20 rounded border border-gray-200 object-cover transition hover:border-brand-600"
+                                                     loading="lazy" decoding="async">
                                             </a>
                                         @else
                                             <span class="text-gray-400">-</span>

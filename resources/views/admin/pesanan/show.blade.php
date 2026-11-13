@@ -80,7 +80,7 @@
                 <div class="mb-4 overflow-hidden rounded-lg border border-gray-200">
                     <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
                          alt="Bukti pembayaran {{ $pesanan->kode }}"
-                         class="h-64 w-full bg-gray-50 object-contain">
+                         class="h-64 w-full bg-gray-50 object-contain" decoding="async">
                     <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
                         target="_blank" rel="noopener"
                         class="flex items-center justify-center gap-1 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-brand-800">
