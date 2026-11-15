@@ -11,13 +11,14 @@ class PesananProduk extends Model
     protected $table = 'pesanan_produk';
     public $timestamps = false;
 
-    // Status, total, admin, dan kurir TIDAK di fillable: diisi lewat kode server, bukan input user
+    // Status, total, ongkir, admin, dan kurir TIDAK di fillable: diisi lewat kode server, bukan input user
     protected $fillable = ['kode', 'customer_id', 'tanggal_pesan', 'metode_pembayaran', 'alamat_pengiriman'];
 
     protected function casts(): array
     {
         return [
             'total_bayar'   => 'integer',
+            'ongkir'        => 'integer',
             'tanggal_pesan' => 'date',
             'tanggal_bayar' => 'date',
             'tanggal_kirim' => 'date',
