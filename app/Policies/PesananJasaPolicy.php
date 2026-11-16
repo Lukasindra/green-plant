@@ -21,4 +21,13 @@ class PesananJasaPolicy
             && $pesanan->status_pesanan !== 'dibatalkan'
             && $pesanan->metode_pembayaran !== 'cod';
     }
+
+    // Customer hanya boleh membatalkan pesanannya sendiri sebelum mengunggah bukti bayar.
+    // Setelah itu (menunggu verifikasi atau lunas) pembatalan harus lewat admin.
+    public function batalkan(Akun $akun, PesananJasa $pesanan): bool
+    {
+        return $pesanan->customer?->akun_id === $akun->id
+            && $pesanan->status_pembayaran === 'menunggu_bayar'
+            && ! in_array($pesanan->status_pesanan, ['dibatalkan', 'dikirim', 'selesai', 'dijadwalkan', 'dikerjakan'], true);
+    }
 }

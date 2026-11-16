@@ -132,6 +132,15 @@
                     <a href="{{ route('pesanan-jasa.bukti', $pesanan) }}" target="_blank" class="font-medium text-brand-700 hover:underline">Lihat bukti yang diunggah</a>
                 </p>
             @endif
+
+            @can('batalkan', $pesanan)
+                <form method="POST" action="{{ route('pesanan-jasa.batalkan', $pesanan) }}" class="mt-5 border-t border-gray-200 pt-4"
+                      onsubmit="return confirm('Batalkan pesanan {{ $pesanan->kode }}? Tindakan ini tidak dapat dibatalkan.')">
+                    @csrf
+                    <p class="mb-2 text-xs text-gray-500">Belum jadi membayar? Pesanan bisa dibatalkan selama bukti pembayaran belum diunggah.</p>
+                    <x-button varian="danger" class="w-full">Batalkan Pesanan</x-button>
+                </form>
+            @endcan
         @endif
     </section>
 </div>

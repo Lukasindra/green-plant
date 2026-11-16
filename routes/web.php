@@ -118,10 +118,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/pesanan/{pesanan}/bukti', [PesananController::class, 'bukti'])->name('pesanan.bukti');
     Route::post('/pesanan/{pesanan}/bukti', [PesananController::class, 'uploadBukti'])
         ->name('pesanan.bukti.simpan')->middleware('throttle:10,1');
+    Route::post('/pesanan/{pesanan}/batalkan', [PesananController::class, 'batalkan'])
+        ->name('pesanan.batalkan')->middleware('throttle:10,1');
 
     Route::get('/pesanan-jasa', [PesananJasaController::class, 'index'])->name('pesanan-jasa.index');
     Route::get('/pesanan-jasa/{pesanan}', [PesananJasaController::class, 'show'])->name('pesanan-jasa.show');
     Route::get('/pesanan-jasa/{pesanan}/bukti', [PesananJasaController::class, 'bukti'])->name('pesanan-jasa.bukti');
     Route::post('/pesanan-jasa/{pesanan}/bukti', [PesananJasaController::class, 'uploadBukti'])
         ->name('pesanan-jasa.bukti.simpan')->middleware('throttle:10,1');
+    Route::post('/pesanan-jasa/{pesanan}/batalkan', [PesananJasaController::class, 'batalkan'])
+        ->name('pesanan-jasa.batalkan')->middleware('throttle:10,1');
 });

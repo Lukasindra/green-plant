@@ -31,4 +31,13 @@ class PesananProdukPolicy
             && $pesanan->kurir_id !== null
             && (int) $pesanan->kurir_id === (int) $kurir->id;
     }
+
+    // Customer hanya boleh membatalkan pesanannya sendiri sebelum mengunggah bukti bayar.
+    // Setelah itu (menunggu verifikasi atau lunas) pembatalan harus lewat admin.
+    public function batalkan(Akun $akun, PesananProduk $pesanan): bool
+    {
+        return $pesanan->customer?->akun_id === $akun->id
+            && $pesanan->status_pembayaran === 'menunggu_bayar'
+            && ! in_array($pesanan->status_pesanan, ['dibatalkan', 'dikirim', 'selesai', 'dijadwalkan', 'dikerjakan'], true);
+    }
 }
