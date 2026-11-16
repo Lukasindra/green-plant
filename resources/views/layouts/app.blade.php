@@ -33,7 +33,7 @@
     @endphp
 
     <header class="border-b border-gray-200 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center justify-between gap-4 px-4 py-3">
             <a href="{{ url('/') }}"><x-logo /></a>
 
             <nav class="hidden items-center gap-8 text-sm md:flex">
@@ -138,7 +138,7 @@
         </nav>
     </div>
 
-    <main id="isi-utama" tabindex="-1" class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none">
+    <main id="isi-utama" tabindex="-1" class="w-full flex-1 px-4 py-6 outline-none">
         @if (session('status'))
             <div class="mb-4 rounded-md border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">{{ session('status') }}</div>
         @endif
@@ -150,7 +150,7 @@
     </main>
 
     <footer class="mt-8 bg-brand-900 text-brand-100">
-        <div class="mx-auto max-w-6xl px-4 py-8">
+        <div class="px-4 py-8">
             <div class="grid gap-8 sm:grid-cols-3">
                 <div>
                     <x-logo :terang="true" />
