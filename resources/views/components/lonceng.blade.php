@@ -27,11 +27,18 @@
 
     @once
         <script>
-            // Tutup panel lonceng saat klik di luar
+            // Tutup panel lonceng saat klik di luar atau tombol Esc
             document.addEventListener('click', function (e) {
                 document.querySelectorAll('details[data-lonceng][open]').forEach(function (d) {
                     if (!d.contains(e.target)) d.removeAttribute('open');
                 });
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('details[data-lonceng][open]').forEach(function (d) {
+                        d.removeAttribute('open');
+                    });
+                }
             });
         </script>
     @endonce
