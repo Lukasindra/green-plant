@@ -1,6 +1,7 @@
 ﻿<?php
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Admin\JasaController as AdminJasaController;
+use App\Http\Controllers\Admin\KategoriController as AdminKategoriController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\PengaturanController as AdminPengaturanController;
 use App\Http\Controllers\Admin\PenggunaController as AdminPenggunaController;
@@ -43,6 +44,14 @@ Route::post('/admin/jasa', [AdminJasaController::class, 'store'])->middleware(['
 Route::get('/admin/jasa/{jasa}/edit', [AdminJasaController::class, 'edit'])->middleware(['auth', 'role:admin'])->name('admin.jasa.edit');
 Route::put('/admin/jasa/{jasa}', [AdminJasaController::class, 'update'])->middleware(['auth', 'role:admin'])->name('admin.jasa.update');
 Route::delete('/admin/jasa/{jasa}', [AdminJasaController::class, 'destroy'])->middleware(['auth', 'role:admin'])->name('admin.jasa.destroy');
+
+// Admin: kelola kategori produk dan jasa
+Route::get('/admin/kategori', [AdminKategoriController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.kategori.index');
+Route::get('/admin/kategori/tambah', [AdminKategoriController::class, 'create'])->middleware(['auth', 'role:admin'])->name('admin.kategori.create');
+Route::post('/admin/kategori', [AdminKategoriController::class, 'store'])->middleware(['auth', 'role:admin'])->name('admin.kategori.store');
+Route::get('/admin/kategori/{kategori}/edit', [AdminKategoriController::class, 'edit'])->middleware(['auth', 'role:admin'])->name('admin.kategori.edit');
+Route::put('/admin/kategori/{kategori}', [AdminKategoriController::class, 'update'])->middleware(['auth', 'role:admin'])->name('admin.kategori.update');
+Route::delete('/admin/kategori/{kategori}', [AdminKategoriController::class, 'destroy'])->middleware(['auth', 'role:admin'])->name('admin.kategori.destroy');
 
 // Kelola pesanan (admin): produk & jasa
 Route::get('/admin/pesanan', [AdminPesananController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.index');

@@ -68,6 +68,7 @@
 
                 @auth
                     <div class="flex items-center gap-3 text-sm">
+                        <x-lonceng />
                         @if (auth()->user()->isCustomer())
                             <a href="{{ route('pesanan.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Pesanan</a>
                         @endif

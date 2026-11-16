@@ -44,6 +44,7 @@
             ['Dashboard', 'admin.dashboard', 'dashboard', 'admin.dashboard'],
             ['Produk', 'admin.produk.index', 'produk', 'admin.produk.*'],
             ['Jasa', 'admin.jasa.index', 'jasa', 'admin.jasa.*'],
+            ['Kategori', 'admin.kategori.index', 'kategori', 'admin.kategori.*'],
             ['Pesanan', 'admin.pesanan.index', 'pesanan', 'admin.pesanan.*'],
             ['Pembayaran', 'admin.pembayaran.index', 'pembayaran', 'admin.pembayaran.*'],
             ['Pengiriman', 'admin.pengiriman.index', 'pengiriman', 'admin.pengiriman.*'],
@@ -100,9 +101,7 @@
             </button>
             <h1 class="min-w-0 truncate text-xl font-bold text-gray-900 sm:text-2xl">@yield('judul', 'Dashboard')</h1>
             <div class="ml-auto flex items-center gap-4">
-                <span title="Notifikasi belum tersedia" aria-label="Notifikasi" class="text-gray-400">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0"/></svg>
-                </span>
+                <x-lonceng />
                 <span class="flex items-center gap-3">
                     <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-800" aria-hidden="true">
                         {{ strtoupper(substr(auth()->user()->nama, 0, 1)) }}
