@@ -16,8 +16,6 @@ class ProdukController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.produk.index', [
             'produk' => Produk::query()
                 ->with('kategori')
@@ -28,8 +26,6 @@ class ProdukController extends Controller
 
     public function create(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.produk.create', [
             'produk' => null,
             'kategori' => Kategori::query()
@@ -41,8 +37,6 @@ class ProdukController extends Controller
 
     public function edit(Request $request, Produk $produk): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.produk.create', [
             'produk' => $produk,
             'kategori' => Kategori::query()
@@ -54,8 +48,6 @@ class ProdukController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $this->validatedProductData($request);
         $data['foto'] = $this->storePhoto($request);
 
@@ -68,8 +60,6 @@ class ProdukController extends Controller
 
     public function update(Request $request, Produk $produk): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $this->validatedProductData($request, true);
         $newPhoto = $this->storePhoto($request);
         $oldPhoto = $produk->foto;
@@ -90,8 +80,6 @@ class ProdukController extends Controller
 
     public function destroy(Request $request, Produk $produk): RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if (DetailPesananProduk::query()->where('produk_id', $produk->id)->exists()) {
             return redirect()
                 ->route('admin.produk.index')

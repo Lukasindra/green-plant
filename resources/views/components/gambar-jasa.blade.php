@@ -4,7 +4,7 @@
     $ada = $file && file_exists(public_path($file));
 @endphp
 @if ($ada)
-    <img src="{{ asset($file) }}" alt="{{ $nama }}" class="h-full w-full object-cover" loading="lazy">
+    <img src="{{ asset($file) }}" alt="{{ $nama }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
 @else
     <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-100">
         <x-logo-icon class="h-14 w-14 text-teal-500/50" />

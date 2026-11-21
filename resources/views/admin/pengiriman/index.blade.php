@@ -10,11 +10,6 @@
             'selesai' => 'Selesai',
         ];
         $formatUang = fn ($nilai) => 'Rp ' . number_format((float) $nilai, 0, ',', '.');
-        $statusBadge = [
-            'diproses' => ['Menunggu Kirim', 'bg-amber-100 text-amber-800'],
-            'dikirim' => ['Dikirim', 'bg-sky-100 text-sky-800'],
-            'selesai' => ['Selesai', 'bg-emerald-100 text-emerald-800'],
-        ];
     @endphp
 
     <div class="space-y-6">
@@ -31,7 +26,7 @@
             </div>
         </div>
 
-        <section aria-label="Daftar pengiriman" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[56rem] text-left text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -46,9 +41,6 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse ($pesanan as $item)
-                            @php
-                                [$teksStatus, $kelasStatus] = $statusBadge[$item->status_pesanan ?? 'diproses'] ?? ['', ''];
-                            @endphp
                             <tr>
                                 <td class="px-5 py-4 align-top">
                                     <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
@@ -81,19 +73,13 @@
                                                     <option value="{{ $kurir->id }}">{{ $kurir->username }}</option>
                                                 @endforeach
                                             </select>
-                                            <button type="submit"
-                                                class="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-800">
-                                                Tandai Dikirim
-                                            </button>
+                                            <x-button ukuran="sm">Tandai Dikirim</x-button>
                                         </form>
                                     @elseif ($status === 'dikirim')
                                         <form method="POST" action="{{ route('admin.pengiriman.aksi', ['pesanan' => $item]) }}">
                                             @csrf
                                             <input type="hidden" name="aksi" value="selesai">
-                                            <button type="submit"
-                                                class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700">
-                                                Tandai Selesai
-                                            </button>
+                                            <x-button varian="sukses" ukuran="sm">Tandai Selesai</x-button>
                                         </form>
                                     @else
                                         <span class="text-gray-400">-</span>
@@ -102,17 +88,22 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-10 text-center text-gray-500">
-                                    Tidak ada pesanan pada status {{ strtolower($statusTab[$status]) }}.
+                                <td colspan="6" class="px-5 py-14 text-center">
+                                    <p class="font-semibold text-gray-800">
+                                        Tidak ada pesanan pada status {{ strtolower($statusTab[$status]) }}.
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500">Pilih tab status lain di atas untuk melihat daftar pengiriman lainnya.</p>
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-gray-100 px-5 py-4">
-                {{ $pesanan->links() }}
-            </div>
-        </section>
+            @if ($pesanan->hasPages())
+                <div class="border-t border-gray-100 px-5 py-4">
+                    {{ $pesanan->links() }}
+                </div>
+            @endif
+        </x-panel>
     </div>
 @endsection

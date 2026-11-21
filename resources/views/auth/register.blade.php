@@ -9,47 +9,18 @@
 <form method="POST" action="{{ route('daftar') }}" class="mt-6 space-y-3">
     @csrf
 
-    @php
-        $kelas = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600';
-    @endphp
+    <x-input nama="nama" label="Nama lengkap" required value="{{ old('nama') }}" autofocus />
+    <x-input nama="email" label="Email" tipe="email" required autocomplete="email" value="{{ old('email') }}" />
+    <x-input nama="no_hp" label="No. HP (opsional)" inputmode="tel" value="{{ old('no_hp') }}" />
 
-    <div>
-        <label for="nama" class="mb-1 block text-sm font-medium">Nama lengkap</label>
-        <input id="nama" name="nama" value="{{ old('nama') }}" required autofocus class="{{ $kelas }}">
-        @error('nama') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-    </div>
-
-    <div>
-        <label for="email" class="mb-1 block text-sm font-medium">Email</label>
-        <input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" class="{{ $kelas }}">
-        @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-    </div>
-
-    <div>
-        <label for="no_hp" class="mb-1 block text-sm font-medium">No. HP <span class="text-gray-400">(opsional)</span></label>
-        <input id="no_hp" name="no_hp" value="{{ old('no_hp') }}" inputmode="tel" class="{{ $kelas }}">
-        @error('no_hp') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-    </div>
-
-    <div>
-        <label for="alamat" class="mb-1 block text-sm font-medium">Alamat</label>
-        <textarea id="alamat" name="alamat" rows="2" required class="{{ $kelas }}">{{ old('alamat') }}</textarea>
-        @error('alamat') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-    </div>
+    <x-textarea nama="alamat" label="Alamat" :baris="2" required>{{ old('alamat') }}</x-textarea>
 
     <div class="grid gap-3 sm:grid-cols-2">
-        <div>
-            <label for="password" class="mb-1 block text-sm font-medium">Password</label>
-            <input id="password" type="password" name="password" required autocomplete="new-password" class="{{ $kelas }}">
-            @error('password') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-        </div>
-        <div>
-            <label for="password_confirmation" class="mb-1 block text-sm font-medium">Ulangi password</label>
-            <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" class="{{ $kelas }}">
-        </div>
+        <x-input nama="password" label="Password" tipe="password" required autocomplete="new-password" />
+        <x-input nama="password_confirmation" label="Ulangi password" tipe="password" required autocomplete="new-password" />
     </div>
 
-    <button type="submit" class="mt-2 w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Daftar</button>
+    <x-button class="mt-2 w-full">Daftar</x-button>
 </form>
 
 <p class="mt-5 text-center text-sm text-gray-500">

@@ -80,9 +80,13 @@
                 <div class="mb-4 overflow-hidden rounded-lg border border-gray-200">
                     <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
                          alt="Bukti pembayaran {{ $pesanan->kode }}"
-                         class="h-64 w-full bg-gray-50 object-contain">
+                         class="h-64 w-full bg-gray-50 object-contain" decoding="async">
+                    <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
+                        target="_blank" rel="noopener"
+                        class="flex items-center justify-center gap-1 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-brand-800">
+                        Buka ukuran penuh &#8599;
+                    </a>
                 </div>
-                <p class="mb-4 text-xs text-gray-500">Sumber: {{ $pesanan->bukti_bayar }}</p>
             @else
                 <p class="mb-4 rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">Belum ada bukti pembayaran yang diunggah.</p>
             @endif
@@ -94,22 +98,24 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="verifikasi_bayar">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Verifikasi Bukti Bayar</button>
+                            <x-button class="w-full">Verifikasi Bukti Bayar</x-button>
                         </form>
-                        <form method="POST" action="{{ $ruteAksi }}">
+                        <form method="POST" action="{{ $ruteAksi }}"
+                            onsubmit="return confirm('Tolak bukti bayar pesanan {{ $pesanan->kode }}? Customer diminta mengunggah ulang.')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="tolak_bayar">
-                            <button type="submit" class="w-full rounded-lg border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Tolak Bukti Bayar</button>
+                            <x-button varian="outline" class="w-full">Tolak Bukti Bayar</x-button>
                         </form>
                     @endif
 
                     @if ($pesanan->metode_pembayaran === 'cod' && $pesanan->status_pembayaran === 'menunggu_bayar')
-                        <form method="POST" action="{{ $ruteAksi }}">
+                        <form method="POST" action="{{ $ruteAksi }}"
+                            onsubmit="return confirm('Konfirmasi pesanan {{ $pesanan->kode }} (COD) sudah dibayar lunas?')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="konfirmasi_cod">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Konfirmasi COD</button>
+                            <x-button class="w-full">Konfirmasi COD</x-button>
                         </form>
                     @endif
 
@@ -118,7 +124,28 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="dikirim">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Tandai Dikirim</button>
+                            <x-button class="w-full">Tandai Dikirim</x-button>
+                        </form>
+                    @endif
+
+                    @if ($tipe === 'jasa' && $lunas && $punyaStatusPesanan && ! in_array($statusPesanan, ['dikerjakan', 'selesai'], true))
+                        <form method="POST" action="{{ $ruteAksi }}" class="space-y-2">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="jadwalkan">
+                            <label for="jadwal" class="block text-xs font-medium text-gray-600">Jadwal pengerjaan</label>
+                            <input id="jadwal" type="datetime-local" name="jadwal"
+                                   value="{{ $pesanan->jadwal_pengerjaan?->format('Y-m-d\TH:i') }}"
+                                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                            <x-button varian="brand-outline" class="w-full">
+                                {{ $statusPesanan === 'dijadwalkan' ? 'Jadwalkan Ulang' : 'Jadwalkan Pengerjaan' }}
+                            </x-button>
+                        </form>
+                        <form method="POST" action="{{ $ruteAksi }}">
+                            @csrf
+                            <input type="hidden" name="dari" value="detail">
+                            <input type="hidden" name="aksi" value="mulai_kerja">
+                            <x-button class="w-full">Mulai Dikerjakan</x-button>
                         </form>
                     @endif
 
@@ -127,7 +154,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="selesai">
-                            <button type="submit" class="w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Tandai Selesai</button>
+                            <x-button class="w-full">Tandai Selesai</x-button>
                         </form>
                     @endif
 
@@ -136,7 +163,7 @@
                             @csrf
                             <input type="hidden" name="dari" value="detail">
                             <input type="hidden" name="aksi" value="batalkan">
-                            <button type="submit" class="w-full rounded-lg border border-red-200 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50">Batalkan Pesanan</button>
+                            <x-button varian="danger" class="w-full">Batalkan Pesanan</x-button>
                         </form>
                     @endif
                 </div>
@@ -146,3 +173,4 @@
         </section>
     </div>
 @endsection
+

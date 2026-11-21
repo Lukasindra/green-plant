@@ -44,8 +44,8 @@
     <div class="mt-4">{{ $pesanan->links() }}</div>
 @else
     <div class="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
-        <p class="text-sm text-gray-500">Belum ada pesanan.</p>
-        <a href="{{ route('produk.index') }}" class="mt-4 inline-block rounded-lg bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Mulai Belanja</a>
+        <p class="font-semibold text-gray-800">Belum ada pesanan.</p>
+        <x-button href="{{ route('produk.index') }}" class="mt-4">Mulai Belanja</x-button>
     </div>
 @endif
 @endsection

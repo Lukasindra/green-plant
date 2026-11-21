@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DetailPesananProduk;
 use App\Models\PesananProduk;
 use App\Models\Produk;
+use App\Support\Toko;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,7 @@ class CheckoutController extends Controller
             return redirect()->route('keranjang.index')->with('error', 'Keranjang Anda masih kosong.');
         }
 
-        $ongkir = (int) config('toko.ongkir');
+        $ongkir = Toko::ongkir();
 
         return view('checkout.index', [
             'baris'    => $baris,
@@ -89,7 +90,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $ongkir = (int) config('toko.ongkir');
+        $ongkir = Toko::ongkir();
 
         $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal, $ongkir) {
             $pesanan = new PesananProduk([

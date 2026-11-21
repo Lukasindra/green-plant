@@ -12,6 +12,7 @@ class ProdukController extends Controller
     {
         // Semua input dari URL divalidasi dulu
         $data = $request->validate([
+            'q'        => ['nullable', 'string', 'max:100'],
             'kategori' => ['nullable', 'integer'],
             'maks'     => ['nullable', 'integer', 'min:0', 'max:100000000'],
             'urut'     => ['nullable', 'in:terbaru,termurah,termahal'],
@@ -20,8 +21,16 @@ class ProdukController extends Controller
         $kategoriAktif = $data['kategori'] ?? null;
         $maks          = $data['maks'] ?? 1000000;
         $urut          = $data['urut'] ?? 'terbaru';
+        $q             = trim((string) ($data['q'] ?? ''));
 
         $query = Produk::with('kategori')->where('harga', '<=', $maks);
+
+        if ($q !== '') {
+            $query->where(function ($cari) use ($q) {
+                $cari->where('nama', 'like', "%{$q}%")
+                    ->orWhere('deskripsi', 'like', "%{$q}%");
+            });
+        }
 
         if ($kategoriAktif) {
             $query->where('kategori_id', $kategoriAktif);
@@ -39,6 +48,20 @@ class ProdukController extends Controller
             'kategoriAktif' => $kategoriAktif,
             'maks'          => $maks,
             'urut'          => $urut,
+            'q'             => $q,
+        ]);
+    }
+
+    public function show(Produk $produk)
+    {
+        return view('produk.show', [
+            'produk'  => $produk->load('kategori'),
+            'terkait' => Produk::with('kategori')
+                ->where('kategori_id', $produk->kategori_id)
+                ->whereKeyNot($produk->id)
+                ->orderByDesc('id')
+                ->limit(4)
+                ->get(),
         ]);
     }
 }

@@ -13,15 +13,11 @@ class PengaturanController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.pengaturan.index', $this->data());
     }
 
     public function simpan(Request $request): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if (! Schema::hasTable('pengaturan')) {
             return redirect()
                 ->route('admin.pengaturan.index')
@@ -89,7 +85,9 @@ class PengaturanController extends Controller
     private function bacaTersimpan($tersimpan, string $kunci, mixed $bawaan): mixed
     {
         if ($tersimpan->has($kunci)) {
-            return json_decode($tersimpan->get($kunci), true) ?: $bawaan;
+            $nilai = json_decode($tersimpan->get($kunci), true);
+
+            return $nilai ?? $bawaan;   // ongkir 0 (gratis) dan daftar kosong tetap sah
         }
 
         return $bawaan;

@@ -49,9 +49,13 @@
             </div>
         </div>
 
-        <section aria-label="Daftar pembayaran" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             @if ($pesanan->isEmpty())
-                <p class="px-6 py-14 text-center text-sm text-gray-500">Tidak ada pembayaran pada status ini.</p>
+                <div class="px-6 py-14 text-center">
+                    <p class="font-semibold text-gray-800">Tidak ada pembayaran pada status ini.</p>
+                    <a href="{{ route('admin.pembayaran.index') }}"
+                        class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Lihat semua pembayaran</a>
+                </div>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[52rem] text-left text-sm">
@@ -73,7 +77,7 @@
                                     $ruteDetail = $adalahJasa ? 'admin.pesanan.jasa.show' : 'admin.pesanan.produk.show';
                                     $ruteAksi = $adalahJasa ? route('admin.pesanan.jasa.aksi', $item) : route('admin.pesanan.produk.aksi', $item);
                                 @endphp
-                                <tr>
+                                <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-3.5">
                                         <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
                                         <span class="mt-1 block text-xs text-gray-500">{{ $item->customer?->akun?->nama ?? '-' }}</span>
@@ -83,10 +87,12 @@
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-3 py-3.5">
                                         @if ($item->bukti_bayar)
-                                            <a href="{{ route($ruteDetail, $item) }}" title="Lihat detail & bukti bayar">
+                                            <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipeParam, 'id' => $item->id]) }}"
+                                                target="_blank" rel="noopener" title="Buka bukti bayar ukuran penuh">
                                                 <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipeParam, 'id' => $item->id]) }}"
                                                      alt="Bukti bayar {{ $item->kode }}"
-                                                     class="h-12 w-20 rounded border border-gray-200 object-cover">
+                                                     class="h-12 w-20 rounded border border-gray-200 object-cover transition hover:border-brand-600"
+                                                     loading="lazy" decoding="async">
                                             </a>
                                         @else
                                             <span class="text-gray-400">-</span>
@@ -101,7 +107,8 @@
                                                     <input type="hidden" name="aksi" value="verifikasi_bayar">
                                                     <button type="submit" class="font-medium text-brand-800 hover:text-brand-900">Verifikasi</button>
                                                 </form>
-                                                <form method="POST" action="{{ $ruteAksi }}">
+                                                <form method="POST" action="{{ $ruteAksi }}"
+                                                    onsubmit="return confirm('Tolak bukti bayar pesanan {{ $item->kode }}? Customer diminta mengunggah ulang.')">
                                                     @csrf
                                                     <input type="hidden" name="dari" value="pembayaran">
                                                     <input type="hidden" name="aksi" value="tolak_bayar">
@@ -110,7 +117,8 @@
                                             @endif
 
                                             @if ($item->metode_pembayaran === 'cod' && $item->status_pembayaran === 'menunggu_bayar')
-                                                <form method="POST" action="{{ $ruteAksi }}">
+                                                <form method="POST" action="{{ $ruteAksi }}"
+                                                    onsubmit="return confirm('Konfirmasi pesanan {{ $item->kode }} (COD) sudah dibayar lunas?')">
                                                     @csrf
                                                     <input type="hidden" name="dari" value="pembayaran">
                                                     <input type="hidden" name="aksi" value="konfirmasi_cod">
@@ -126,10 +134,12 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="border-t border-gray-100 px-5 py-4">
-                    {{ $pesanan->links() }}
-                </div>
+                @if ($pesanan->hasPages())
+                    <div class="border-t border-gray-100 px-5 py-4">
+                        {{ $pesanan->links() }}
+                    </div>
+                @endif
             @endif
-        </section>
+        </x-panel>
     </div>
 @endsection

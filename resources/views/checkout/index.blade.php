@@ -30,10 +30,7 @@
         </dl>
 
         <div class="mt-5">
-            <label for="alamat_pengiriman" class="mb-1 block text-sm font-medium">Alamat pengiriman</label>
-            <textarea id="alamat_pengiriman" name="alamat_pengiriman" rows="3" required
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">{{ old('alamat_pengiriman', $alamat) }}</textarea>
-            @error('alamat_pengiriman') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            <x-textarea nama="alamat_pengiriman" label="Alamat pengiriman" :baris="3" required>{{ old('alamat_pengiriman', $alamat) }}</x-textarea>
         </div>
     </section>
 
@@ -41,7 +38,7 @@
     <section class="rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="mb-3 text-sm font-semibold">Pilih Metode Pembayaran</h2>
 
-        <div class="space-y-2">
+        <div class="space-y-2" role="radiogroup" aria-label="Metode pembayaran">
             @foreach (config('toko.metode') as $kode => $nama)
                 <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm hover:bg-gray-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
                     <input type="radio" name="metode_pembayaran" value="{{ $kode }}" class="accent-brand-700"
@@ -50,11 +47,9 @@
                 </label>
             @endforeach
         </div>
-        @error('metode_pembayaran') <p class="mt-2 text-xs text-red-600">{{ $message }}</p> @enderror
+        @error('metode_pembayaran') <p class="mt-2 text-sm text-red-700">{{ $message }}</p> @enderror
 
-        <button type="submit" class="mt-5 w-full rounded-lg bg-brand-700 py-3 text-sm font-semibold text-white hover:bg-brand-800">
-            Buat Pesanan
-        </button>
+        <x-button class="mt-5 w-full py-3">Buat Pesanan</x-button>
         <p class="mt-2 text-center text-xs text-gray-500">Pembayaran dikonfirmasi manual oleh admin setelah bukti diunggah.</p>
     </section>
 </form>

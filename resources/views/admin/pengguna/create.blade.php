@@ -10,9 +10,7 @@
             @include('admin.pengguna.partials._form')
 
             <div class="flex items-center gap-3 border-t border-gray-100 pt-4">
-                <button type="submit" class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800">
-                    Simpan Pengguna
-                </button>
+                <x-button>Simpan Pengguna</x-button>
                 <a href="{{ route('admin.pengguna.index') }}" class="text-sm font-medium text-gray-500 hover:text-gray-700">Batal</a>
             </div>
         </form>

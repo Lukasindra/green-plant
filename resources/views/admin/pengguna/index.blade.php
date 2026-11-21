@@ -36,13 +36,10 @@
                 </button>
             </form>
 
-            <a href="{{ route('admin.pengguna.create') }}"
-                class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800">
-                + Tambah Pengguna
-            </a>
+            <x-button href="{{ route('admin.pengguna.create') }}">+ Tambah Pengguna</x-button>
         </div>
 
-        <section aria-label="Daftar pengguna" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <x-panel>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[48rem] text-left text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
@@ -81,7 +78,7 @@
                                                 onsubmit="return confirm('Hapus pengguna {{ $akun->nama }}?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="font-medium text-red-600 hover:text-red-800">Hapus</button>
+                                                <button type="submit" class="font-medium text-red-700 hover:text-red-800">Hapus</button>
                                             </form>
                                         @else
                                             <span class="text-gray-400">(Anda)</span>
@@ -91,15 +88,32 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-10 text-center text-gray-500">Tidak ada pengguna ditemukan.</td>
+                                <td colspan="5" class="px-5 py-14 text-center">
+                                    <p class="font-semibold text-gray-800">
+                                        @if ($kata !== '')
+                                            Tidak ada hasil untuk &ldquo;{{ $kata }}&rdquo;.
+                                        @else
+                                            Belum ada pengguna.
+                                        @endif
+                                    </p>
+                                    @if ($kata !== '')
+                                        <a href="{{ route('admin.pengguna.index') }}"
+                                            class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Hapus pencarian</a>
+                                    @else
+                                        <a href="{{ route('admin.pengguna.create') }}"
+                                            class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Tambah pengguna pertama</a>
+                                    @endif
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-gray-100 px-5 py-4">
-                {{ $pengguna->links() }}
-            </div>
-        </section>
+            @if ($pengguna->hasPages())
+                <div class="border-t border-gray-100 px-5 py-4">
+                    {{ $pengguna->links() }}
+                </div>
+            @endif
+        </x-panel>
     </div>
 @endsection

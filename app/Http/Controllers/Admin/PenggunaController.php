@@ -17,8 +17,6 @@ class PenggunaController extends Controller
 
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $role = $this->roleValid($request->input('role'));
         $kata = trim((string) $request->input('q', ''));
 
@@ -42,8 +40,6 @@ class PenggunaController extends Controller
 
     public function create(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.pengguna.create', [
             'daftarRole' => self::ROLES,
         ]);
@@ -51,8 +47,6 @@ class PenggunaController extends Controller
 
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', 'unique:akun,email'],
@@ -89,8 +83,6 @@ class PenggunaController extends Controller
 
     public function edit(Request $request, Akun $pengguna): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         return view('admin.pengguna.edit', [
             'pengguna' => $pengguna->load(['customer', 'karyawan']),
             'daftarRole' => self::ROLES,
@@ -99,8 +91,6 @@ class PenggunaController extends Controller
 
     public function update(Request $request, Akun $pengguna): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', Rule::unique('akun', 'email')->ignore($pengguna->id)],
@@ -144,8 +134,6 @@ class PenggunaController extends Controller
 
     public function destroy(Request $request, Akun $pengguna): \Illuminate\Http\RedirectResponse
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         if ($pengguna->id === $request->user()->id) {
             return redirect()
                 ->route('admin.pengguna.index')

@@ -9,6 +9,8 @@
             'menunggu_bayar' => 'Menunggu bayar',
             'menunggu_verifikasi' => 'Menunggu verifikasi',
             'lunas' => 'Lunas',
+            'dijadwalkan' => 'Dijadwalkan',
+            'dikerjakan' => 'Dikerjakan',
             'dikirim' => 'Dikirim',
             'selesai' => 'Selesai',
             'dibatalkan' => 'Dibatalkan',
@@ -44,9 +46,13 @@
             </form>
         </div>
 
-        <section aria-label="Daftar pesanan" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            @if ($pesanan->isEmpty())
-                <p class="px-6 py-14 text-center text-sm text-gray-500">Belum ada pesanan untuk filter ini.</p>
+    <x-panel>
+        @if ($pesanan->isEmpty())
+            <div class="px-6 py-14 text-center">
+                <p class="font-semibold text-gray-800">Belum ada pesanan pada filter ini.</p>
+                <a href="{{ route('admin.pesanan.index') }}"
+                    class="mt-3 inline-flex text-sm font-semibold text-brand-800 hover:text-brand-900">Lihat semua pesanan</a>
+            </div>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full min-w-[52rem] text-left text-sm">
@@ -68,7 +74,7 @@
                                         ? 'admin.pesanan.jasa.show'
                                         : 'admin.pesanan.produk.show';
                                 @endphp
-                                <tr>
+                                <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-3.5">
                                         <span class="block font-medium text-gray-900">{{ $item->kode }}</span>
                                         <span class="mt-1 block text-xs text-gray-500">{{ $item->customer?->akun?->nama ?? '-' }}</span>
@@ -84,7 +90,7 @@
                                             <span class="text-gray-400">-</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->format('d/m/Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->format('d M Y') }}</td>
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-5 py-3.5">
                                         <div class="flex items-center justify-end gap-3">
@@ -103,10 +109,12 @@
                         </tbody>
                     </table>
                 </div>
+            @if ($pesanan->hasPages())
                 <div class="border-t border-gray-100 px-5 py-4">
                     {{ $pesanan->links() }}
                 </div>
             @endif
-        </section>
+            @endif
+        </x-panel>
     </div>
 @endsection

@@ -8,6 +8,35 @@
     <a href="{{ route('pesanan-jasa.index') }}" class="text-sm text-brand-700 hover:underline">&larr; Semua pesanan jasa</a>
 </div>
 
+@if ($pesanan->status_pesanan !== 'dibatalkan')
+    @php
+        $progres = ['Dibuat', 'Lunas', 'Dikerjakan', 'Selesai'];
+        $capai = [
+            true,
+            $pesanan->status_pembayaran === 'lunas',
+            in_array($pesanan->status_pesanan, ['dikerjakan', 'selesai'], true),
+            $pesanan->status_pesanan === 'selesai',
+        ];
+    @endphp
+    <section class="mb-6 rounded-xl border border-gray-200 bg-white p-5" aria-label="Progres pesanan">
+        <ol class="grid grid-cols-4 gap-2 text-center">
+            @foreach ($progres as $i => $label)
+                @php
+                    $tercapai = $capai[$i];
+                    $tengah = ! $tercapai && ($i === 0 || $capai[$i - 1]);
+                @endphp
+                <li class="flex flex-col items-center gap-1.5 text-xs">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-full font-semibold
+                        {{ $tercapai ? 'bg-brand-700 text-white' : ($tengah ? 'border-2 border-amber-500 bg-amber-50 text-amber-600' : 'border-2 border-gray-200 text-gray-400') }}">
+                        {{ $tercapai ? '&#10003;' : $i + 1 }}
+                    </span>
+                    <span class="{{ $tercapai ? 'font-medium text-gray-800' : ($tengah ? 'font-medium text-amber-700' : 'text-gray-500') }}">{{ $label }}</span>
+                </li>
+            @endforeach
+        </ol>
+    </section>
+@endif
+
 <div class="grid gap-6 lg:grid-cols-2">
 
     {{-- Detail pesanan --}}
@@ -53,7 +82,7 @@
                 @case('transfer')
                     <p class="mb-2 text-sm">Transfer sebesar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu rekening:</p>
                     <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.rekening') as $r)
+                        @foreach (\App\Support\Toko::rekening() as $r)
                             <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $r['bank'] }}</strong> {{ $r['nomor'] }} a.n. {{ $r['nama'] }}</li>
                         @endforeach
                     </ul>
@@ -62,7 +91,7 @@
                 @case('ewallet')
                     <p class="mb-2 text-sm">Kirim <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu e-wallet:</p>
                     <ul class="space-y-1 text-sm">
-                        @foreach (config('toko.ewallet') as $e)
+                        @foreach (\App\Support\Toko::ewallet() as $e)
                             <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $e['nama'] }}</strong> {{ $e['nomor'] }}</li>
                         @endforeach
                     </ul>
@@ -71,7 +100,7 @@
                 @case('qris')
                     <p class="mb-2 text-sm">Scan kode QRIS dan bayar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong>.</p>
                     @if (file_exists(public_path(config('toko.qris_gambar'))))
-                        <img src="{{ asset(config('toko.qris_gambar')) }}" alt="QRIS Green Plant" class="mx-auto h-48 w-48 rounded-md border border-gray-200 object-contain">
+                        <img src="{{ asset(config('toko.qris_gambar')) }}" alt="QRIS Green Plant" class="mx-auto h-48 w-48 rounded-md border border-gray-200 object-contain" decoding="async">
                     @else
                         <p class="rounded-md bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">Kode QRIS belum dipasang.</p>
                     @endif
@@ -87,11 +116,14 @@
                     @csrf
                     <label for="bukti_bayar" class="mb-1 block text-sm font-medium">Unggah bukti pembayaran</label>
                     <input id="bukti_bayar" type="file" name="bukti_bayar" accept="image/png,image/jpeg" required
-                           class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200">
+                           class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200"
+                           onchange="var p=document.getElementById('pratinjau-bukti'); if (this.files && this.files[0]) { p.src = URL.createObjectURL(this.files[0]); p.classList.remove('hidden'); } else { p.src = ''; p.classList.add('hidden'); }">
                     <p class="mt-1 text-xs text-gray-500">JPG atau PNG, maksimal 2 MB.</p>
-                    @error('bukti_bayar') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <img id="pratinjau-bukti" src="" alt="Pratinjau bukti pembayaran"
+                         class="mt-2 hidden max-h-48 w-full rounded-lg border border-gray-200 bg-gray-50 object-contain">
+                    @error('bukti_bayar') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
 
-                    <button type="submit" class="mt-3 w-full rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">Kirim Bukti</button>
+                    <x-button class="mt-3 w-full">Kirim Bukti</x-button>
                 </form>
             @endcan
 
@@ -100,6 +132,15 @@
                     <a href="{{ route('pesanan-jasa.bukti', $pesanan) }}" target="_blank" class="font-medium text-brand-700 hover:underline">Lihat bukti yang diunggah</a>
                 </p>
             @endif
+
+            @can('batalkan', $pesanan)
+                <form method="POST" action="{{ route('pesanan-jasa.batalkan', $pesanan) }}" class="mt-5 border-t border-gray-200 pt-4"
+                      onsubmit="return confirm('Batalkan pesanan {{ $pesanan->kode }}? Tindakan ini tidak dapat dibatalkan.')">
+                    @csrf
+                    <p class="mb-2 text-xs text-gray-500">Belum jadi membayar? Pesanan bisa dibatalkan selama bukti pembayaran belum diunggah.</p>
+                    <x-button varian="danger" class="w-full">Batalkan Pesanan</x-button>
+                </form>
+            @endcan
         @endif
     </section>
 </div>

@@ -13,8 +13,6 @@ class PembayaranController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless($request->user()?->isAdmin(), 403);
-
         $tipe = in_array($request->query('tipe'), ['produk', 'jasa'], true)
             ? $request->query('tipe')
             : 'semua';

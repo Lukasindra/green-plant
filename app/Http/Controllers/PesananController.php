@@ -59,6 +59,20 @@ class PesananController extends Controller
         return back()->with('status', 'Bukti pembayaran terkirim. Admin akan memverifikasinya.');
     }
 
+    // Customer membatalkan pesanannya sendiri selama belum mengunggah bukti bayar.
+    // Stok produk baru berkurang saat lunas, jadi tidak ada stok yang perlu dikembalikan.
+    public function batalkan(PesananProduk $pesanan)
+    {
+        Gate::authorize('batalkan', $pesanan);
+
+        $pesanan->status_pesanan = 'dibatalkan';
+        $pesanan->save();
+
+        return redirect()
+            ->route('pesanan.show', $pesanan)
+            ->with('status', "Pesanan {$pesanan->kode} berhasil dibatalkan.");
+    }
+
     // Menampilkan bukti bayar: hanya pemilik pesanan dan admin
     public function bukti(PesananProduk $pesanan)
     {

@@ -5,12 +5,10 @@
 @section('isi')
     <div class="flex flex-wrap items-center justify-between gap-4">
         <p class="text-sm text-gray-500">Kelola layanan perawatan tanaman: tambah, ubah, atau hapus.</p>
-        <a href="{{ route('admin.jasa.create') }}" class="rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-800">
-            + Tambah Jasa
-        </a>
+        <x-button href="{{ route('admin.jasa.create') }}">+ Tambah Jasa</x-button>
     </div>
 
-    <section aria-label="Daftar jasa" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <x-panel>
         @if ($jasa->isEmpty())
             <div class="px-6 py-14 text-center">
                 <p class="font-semibold text-gray-800">Belum ada jasa.</p>
@@ -60,9 +58,11 @@
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-gray-100 px-5 py-4">
-                {{ $jasa->links() }}
-            </div>
+            @if ($jasa->hasPages())
+                <div class="border-t border-gray-100 px-5 py-4">
+                    {{ $jasa->links() }}
+                </div>
+            @endif
         @endif
-    </section>
+    </x-panel>
 @endsection
