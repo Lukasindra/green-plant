@@ -55,6 +55,27 @@ class CustomerKeranjangTest extends TestCase
             ->assertSessionHas('cart', [$id => 1]);
     }
 
+    public function test_cart_shows_available_stock_and_disables_increment_at_the_stock_limit(): void
+    {
+        $atLimitId = DB::table('produk')->insertGetId([
+            'kategori_id' => null, 'nama' => 'Monstera', 'deskripsi' => null,
+            'harga' => 100000, 'stok' => 2, 'foto' => null,
+        ]);
+        $belowLimitId = DB::table('produk')->insertGetId([
+            'kategori_id' => null, 'nama' => 'Palem', 'deskripsi' => null,
+            'harga' => 250000, 'stok' => 4, 'foto' => null,
+        ]);
+
+        $response = $this->withSession(['cart' => [$atLimitId => 2, $belowLimitId => 1]])
+            ->get(route('keranjang.index'));
+
+        $response->assertOk()
+            ->assertSee('Stok tersedia: 2 unit')
+            ->assertSee('Stok tersedia: 4 unit')
+            ->assertSee('aria-label="Tambah" disabled', false)
+            ->assertSee('title="Tambah jumlah"', false);
+    }
+
     public function test_atur_qty_nol_ditolak_validasi(): void
     {
         $id = DB::table('produk')->insertGetId([

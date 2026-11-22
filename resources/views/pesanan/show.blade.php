@@ -78,6 +78,10 @@
         @elseif ($pesanan->status_pesanan === 'dibatalkan')
             <p class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">Pesanan ini dibatalkan.</p>
         @else
+            <p role="note" class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Stok produk belum ditahan. Ketersediaan dapat berubah sampai pembayaran dikonfirmasi oleh admin.
+            </p>
+
             @switch($pesanan->metode_pembayaran)
                 @case('transfer')
                     <p class="mb-2 text-sm">Transfer sebesar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu rekening:</p>

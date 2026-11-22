@@ -5,6 +5,10 @@
 @section('isi')
 <h1 class="mb-4 text-xl font-semibold">Checkout</h1>
 
+<p role="note" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    Stok pada ringkasan ini belum ditahan. Ketersediaan dapat berubah sebelum pembayaran dikonfirmasi oleh admin.
+</p>
+
 <form method="POST" action="{{ route('checkout.store') }}" class="grid gap-6 lg:grid-cols-2">
     @csrf
 
@@ -14,9 +18,12 @@
 
         <ul class="divide-y divide-gray-100 text-sm">
             @foreach ($baris as $b)
-                <li class="flex items-center justify-between py-2">
-                    <span>{{ $b['produk']->nama }} <span class="text-gray-400">x{{ $b['qty'] }}</span></span>
-                    <span>Rp {{ number_format($b['subtotal'], 0, ',', '.') }}</span>
+                <li class="flex items-center justify-between gap-4 py-2">
+                    <span>
+                        {{ $b['produk']->nama }} <span class="text-gray-400">x{{ $b['qty'] }}</span>
+                        <span class="mt-1 block text-xs text-gray-500">Stok tersedia saat ini: {{ number_format($b['produk']->stok) }} unit</span>
+                    </span>
+                    <span class="shrink-0">Rp {{ number_format($b['subtotal'], 0, ',', '.') }}</span>
                 </li>
             @endforeach
         </ul>

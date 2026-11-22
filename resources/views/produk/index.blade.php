@@ -78,7 +78,7 @@
         @if ($produk->count())
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach ($produk as $p)
-                    <x-produk-card :produk="$p" />
+                    <x-produk-card :produk="$p" :favorit-produk-ids="$favoritProdukIds" />
                 @endforeach
             </div>
             <div class="mt-6">{{ $produk->links() }}</div>

@@ -53,10 +53,18 @@
             <ul class="mt-4 divide-y divide-gray-100 border-t border-gray-200 text-sm">
                 @foreach ($pesanan->detail as $d)
                     <li class="flex items-center justify-between py-2">
-                        <span>
+                        <span class="min-w-0">
                             {{ $tipe === 'jasa' ? $d->jasa?->nama : $d->produk?->nama }} <span class="text-gray-400">x{{ $d->qty }}</span>
+                            @if ($tipe === 'produk' && $d->produk)
+                                <span class="mt-1 block text-xs text-gray-500">Stok tersedia saat ini: {{ number_format($d->produk->stok) }} unit</span>
+                                @if (! $lunas && ! $dibatalkan && $d->produk->stok < $d->qty)
+                                    <span role="alert" class="mt-1 block text-xs font-medium text-red-700">
+                                        Stok kurang: pesanan perlu {{ number_format($d->qty) }} unit, tersedia {{ number_format($d->produk->stok) }}.
+                                    </span>
+                                @endif
+                            @endif
                         </span>
-                        <span>Rp {{ number_format($d->subtotal, 0, ',', '.') }}</span>
+                        <span class="shrink-0">Rp {{ number_format($d->subtotal, 0, ',', '.') }}</span>
                     </li>
                 @endforeach
             </ul>

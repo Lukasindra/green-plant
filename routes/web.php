@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FavoritController;
 use App\Http\Controllers\JasaController;
 use App\Http\Controllers\KeranjangController;
 use App\Http\Controllers\Kurir\PengirimanController as KurirPengirimanController;
@@ -111,6 +112,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:10,1');
+
+    Route::middleware('role:customer')->group(function () {
+        Route::get('/favorit', [FavoritController::class, 'index'])->name('favorit.index');
+        Route::post('/favorit/produk/{produk}', [FavoritController::class, 'store'])->name('favorit.produk.store');
+        Route::delete('/favorit/produk/{produk}', [FavoritController::class, 'destroy'])->name('favorit.produk.destroy');
+    });
 
     Route::post('/jasa/{jasa}', [JasaController::class, 'pesan'])->name('jasa.pesan')->middleware('throttle:10,1');
 

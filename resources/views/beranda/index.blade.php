@@ -4,18 +4,18 @@
 
 @section('isi')
 {{-- Hero --}}
-<section class="rounded-xl border border-brand-200 bg-gradient-to-r from-brand-800 to-brand-700 p-8 text-center text-white shadow-sm">
-    <span class="text-xs font-semibold uppercase tracking-widest text-brand-100/80">Green Plant</span>
-    <h1 class="mt-2 text-2xl font-bold">Taman impianmu dimulai di sini</h1>
-    <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-brand-100/90">
+<section class="rounded-xl border border-brand-200 bg-brand-50 p-8 text-center text-brand-800 shadow-sm">
+    <span class="text-xs font-semibold uppercase tracking-widest text-brand-700">Green Plant</span>
+    <h1 class="mt-2 text-2xl font-bold text-brand-900">Taman impianmu dimulai di sini</h1>
+    <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-brand-800/80">
         Tanaman pilihan siap dikirim ke rumahmu, plus layanan tukang taman profesional
         untuk membuat, merawat, dan menjaga tamanmu tetap hijau.
     </p>
     <div class="mt-5 flex flex-wrap justify-center gap-3">
         <a href="{{ route('produk.index') }}"
-            class="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">Jelajahi Produk</a>
+            class="rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800">Jelajahi Produk</a>
         <a href="{{ route('jasa.index') }}"
-            class="rounded-lg border border-white/40 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">Lihat Jasa</a>
+            class="rounded-lg border border-brand-700/40 px-5 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100">Lihat Jasa</a>
     </div>
 </section>
 
@@ -28,7 +28,7 @@
     @if ($produk->count())
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             @foreach ($produk as $p)
-                <x-produk-card :produk="$p" />
+                <x-produk-card :produk="$p" :favorit-produk-ids="$favoritProdukIds" />
             @endforeach
         </div>
     @else

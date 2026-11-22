@@ -6,6 +6,10 @@
 <h1 class="mb-4 text-xl font-semibold">Keranjang Belanja</h1>
 
 @if (count($baris))
+    <p role="note" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        Produk di keranjang belum dipesan dan stok belum ditahan. Ketersediaan dapat berubah sebelum pembayaran dikonfirmasi.
+    </p>
+
     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
         {{-- Judul kolom (layar lebar) --}}
         <div class="hidden grid-cols-[1fr_110px_140px_120px_50px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-medium text-gray-500 md:grid">
@@ -24,6 +28,7 @@
                     <div>
                         <p class="text-sm font-semibold">{{ $p->nama }}</p>
                         <p class="text-xs text-gray-500">{{ $p->kategori?->nama }}</p>
+                        <p class="mt-1 text-xs text-gray-500">Stok tersedia: {{ number_format($p->stok) }} unit</p>
                     </div>
                 </div>
 
@@ -51,7 +56,9 @@
                         @csrf
                         <input type="hidden" name="produk_id" value="{{ $p->id }}">
                         <input type="hidden" name="aksi" value="tambah">
-                        <button type="submit" aria-label="Tambah" class="h-7 w-7 rounded border border-gray-300 text-sm hover:bg-gray-100">+</button>
+                        <button type="submit" aria-label="Tambah" @disabled($b['qty'] >= $p->stok)
+                            class="h-7 w-7 rounded border border-gray-300 text-sm {{ $b['qty'] >= $p->stok ? 'cursor-not-allowed bg-gray-100 text-gray-400' : 'hover:bg-gray-100' }}"
+                            title="{{ $b['qty'] >= $p->stok ? 'Jumlah sudah mencapai stok tersedia' : 'Tambah jumlah' }}">+</button>
                     </form>
                 </div>
 

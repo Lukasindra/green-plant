@@ -30,6 +30,10 @@
             ['Jasa', route('jasa.index'), request()->routeIs('jasa.*')],
             ['Tentang Kami', route('tentang'), request()->routeIs('tentang')],
         ];
+        $akun = auth()->user();
+        if ($akun?->isCustomer()) {
+            $menu[] = ['Favorit', route('favorit.index'), request()->routeIs('favorit.*')];
+        }
     @endphp
 
     <header class="border-b border-gray-200 bg-white">
@@ -121,6 +125,7 @@
             <div class="mt-2 border-t border-gray-100 pt-3">
                 @auth
                     @if (auth()->user()->isCustomer())
+                        <a href="{{ route('favorit.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Favorit Saya</a>
                         <a href="{{ route('pesanan.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Pesanan Saya</a>
                     @endif
                     @if (auth()->user()->isKurir())

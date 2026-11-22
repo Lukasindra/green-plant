@@ -57,6 +57,7 @@ class BerandaTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Monstera Deliciosa')
+            ->assertSee('Tersedia 10 unit')
             ->assertSee('Perawatan Taman');
     }
 

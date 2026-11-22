@@ -47,7 +47,7 @@
         <h2 class="mb-4 text-lg font-semibold">Produk Serupa</h2>
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             @foreach ($terkait as $t)
-                <x-produk-card :produk="$t" />
+                <x-produk-card :produk="$t" :favorit-produk-ids="$favoritProdukIds" />
             @endforeach
         </div>
     </section>

@@ -12,16 +12,16 @@ class ProdukController extends Controller
     {
         // Semua input dari URL divalidasi dulu
         $data = $request->validate([
-            'q'        => ['nullable', 'string', 'max:100'],
+            'q' => ['nullable', 'string', 'max:100'],
             'kategori' => ['nullable', 'integer'],
-            'maks'     => ['nullable', 'integer', 'min:0', 'max:100000000'],
-            'urut'     => ['nullable', 'in:terbaru,termurah,termahal'],
+            'maks' => ['nullable', 'integer', 'min:0', 'max:100000000'],
+            'urut' => ['nullable', 'in:terbaru,termurah,termahal'],
         ]);
 
         $kategoriAktif = $data['kategori'] ?? null;
-        $maks          = $data['maks'] ?? 1000000;
-        $urut          = $data['urut'] ?? 'terbaru';
-        $q             = trim((string) ($data['q'] ?? ''));
+        $maks = $data['maks'] ?? 1000000;
+        $urut = $data['urut'] ?? 'terbaru';
+        $q = trim((string) ($data['q'] ?? ''));
 
         $query = Produk::with('kategori')->where('harga', '<=', $maks);
 
@@ -39,29 +39,41 @@ class ProdukController extends Controller
         match ($urut) {
             'termurah' => $query->orderBy('harga'),
             'termahal' => $query->orderByDesc('harga'),
-            default    => $query->orderByDesc('id'),   // tabel produk tidak punya tanggal, jadi "terbaru" = id terbesar
+            default => $query->orderByDesc('id'),   // tabel produk tidak punya tanggal, jadi "terbaru" = id terbesar
         };
 
+        $akun = auth()->user();
+        $favoritProdukIds = $akun?->isCustomer()
+            ? $akun->favoritProduk()->pluck('produk.id')->all()
+            : [];
+
         return view('produk.index', [
-            'produk'        => $query->paginate(12)->withQueryString(),
-            'kategori'      => Kategori::where('tipe', 'produk')->orderBy('nama')->get(),
+            'produk' => $query->paginate(12)->withQueryString(),
+            'kategori' => Kategori::where('tipe', 'produk')->orderBy('nama')->get(),
             'kategoriAktif' => $kategoriAktif,
-            'maks'          => $maks,
-            'urut'          => $urut,
-            'q'             => $q,
+            'maks' => $maks,
+            'urut' => $urut,
+            'q' => $q,
+            'favoritProdukIds' => $favoritProdukIds,
         ]);
     }
 
     public function show(Produk $produk)
     {
+        $akun = auth()->user();
+        $favoritProdukIds = $akun?->isCustomer()
+            ? $akun->favoritProduk()->pluck('produk.id')->all()
+            : [];
+
         return view('produk.show', [
-            'produk'  => $produk->load('kategori'),
+            'produk' => $produk->load('kategori'),
             'terkait' => Produk::with('kategori')
                 ->where('kategori_id', $produk->kategori_id)
                 ->whereKeyNot($produk->id)
                 ->orderByDesc('id')
                 ->limit(4)
                 ->get(),
+            'favoritProdukIds' => $favoritProdukIds,
         ]);
     }
 }

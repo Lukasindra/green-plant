@@ -212,6 +212,7 @@ class CustomerBatalkanPesananTest extends TestCase
         $this->withoutVite()->actingAs($pemilik)
             ->get(route('pesanan.show', $bisa))
             ->assertOk()
+            ->assertSee('Stok produk belum ditahan.')
             ->assertSee('Batalkan Pesanan');
 
         $this->withoutVite()->actingAs($pemilik)
