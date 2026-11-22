@@ -1,7 +1,5 @@
 @extends('layouts.auth')
-
 @section('judul', 'Daftar')
-
 @section('isi')
 <h2 class="text-2xl font-semibold">Daftar</h2>
 <p class="mt-1 text-sm text-gray-500">Buat akun pelanggan Green Plant</p>
@@ -25,11 +23,27 @@
         @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
     </div>
 
-    <div>
-        <label for="no_hp" class="mb-1 block text-sm font-medium">No. HP <span class="text-gray-400">(opsional)</span></label>
-        <input id="no_hp" name="no_hp" value="{{ old('no_hp') }}" inputmode="tel" class="{{ $kelas }}">
-        @error('no_hp') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
-    </div>
+   <div>
+    <label for="no_hp" class="mb-1 block text-sm font-medium">
+        No. HP <span class="text-gray-400">(opsional)</span>
+    </label>
+    <input
+        id="no_hp"
+        type="tel"
+        name="no_hp"
+        value="{{ old('no_hp') }}"
+        placeholder="08xxxxxxxxxx"
+        inputmode="numeric"
+        pattern="08[0-9]{8,11}"
+        minlength="10"
+        maxlength="13"
+        title="Nomor HP harus diawali 08 dan terdiri dari 10–13 digit"
+        class="{{ $kelas }}"
+    >
+    @error('no_hp')
+        <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+    @enderror
+</div>
 
     <div>
         <label for="alamat" class="mb-1 block text-sm font-medium">Alamat</label>
