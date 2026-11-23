@@ -60,6 +60,23 @@ class CustomerKatalogTest extends TestCase
             ->assertDontSee('Palem Ekor Tupai');
     }
 
+    public function test_pencarian_produk_tidak_membedakan_huruf_besar_dan_kecil(): void
+    {
+        DB::table('produk')->insert([
+            'kategori_id' => 1,
+            'nama' => 'Pupuk Kompos',
+            'deskripsi' => 'Pupuk organik untuk tanaman',
+            'harga' => 25000,
+            'stok' => 10,
+            'foto' => null,
+        ]);
+
+        $this->get('/produk?q=pupuk')
+            ->assertOk()
+            ->assertSee('Pupuk Kompos')
+            ->assertDontSee('Palem Ekor Tupai');
+    }
+
     public function test_pencarian_produk_cocok_dengan_deskripsi(): void
     {
         $this->get('/produk?q=tropis')

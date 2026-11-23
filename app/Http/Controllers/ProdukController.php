@@ -27,8 +27,10 @@ class ProdukController extends Controller
 
         if ($q !== '') {
             $query->where(function ($cari) use ($q) {
-                $cari->where('nama', 'like', "%{$q}%")
-                    ->orWhere('deskripsi', 'like', "%{$q}%");
+                $pola = "%{$q}%";
+
+                $cari->whereRaw('LOWER(nama) LIKE LOWER(?)', [$pola])
+                    ->orWhereRaw('LOWER(deskripsi) LIKE LOWER(?)', [$pola]);
             });
         }
 
