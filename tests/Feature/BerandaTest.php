@@ -61,6 +61,14 @@ class BerandaTest extends TestCase
             ->assertSee('Perawatan Taman');
     }
 
+    public function test_beranda_menampilkan_banner_tips_tanaman(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Tahukah kamu?')
+            ->assertSee('Tanaman hijau dapat meningkatkan kualitas udara dan membuat suasana lebih segar.');
+    }
+
     public function test_beranda_tetap_tampil_bila_tabel_katalog_belum_ada(): void
     {
         Schema::drop('produk');

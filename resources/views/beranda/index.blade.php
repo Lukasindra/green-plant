@@ -36,6 +36,28 @@
     @endif
 </section>
 
+{{-- Tip tanaman --}}
+<aside class="relative mt-8 overflow-hidden rounded-xl border border-brand-100 bg-brand-50 px-5 py-4 sm:px-7" aria-label="Informasi tanaman">
+    <div class="relative z-10 max-w-2xl pr-20 sm:pr-36">
+        <p class="flex items-center gap-2 text-sm font-semibold text-brand-900">
+            <svg class="h-5 w-5 text-brand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 4c-9 0-15 4-15 11a5 5 0 0 0 5 5c7 0 11-6 10-16Zm-14 14c3-4 7-7 12-10" />
+            </svg>
+            Tahukah kamu?
+        </p>
+        <p class="mt-1 text-sm leading-relaxed text-brand-800/80">
+            Tanaman hijau dapat meningkatkan kualitas udara dan membuat suasana lebih segar.
+        </p>
+    </div>
+    <svg class="pointer-events-none absolute -bottom-5 right-3 h-24 w-24 text-brand-600/80 sm:right-8 sm:h-32 sm:w-32"
+        viewBox="0 0 120 120" fill="none" aria-hidden="true">
+        <path d="M60 84V39M60 68C48 55 42 43 39 30M60 62C73 52 81 42 85 30" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+        <path d="M39 31C25 20 25 9 30 4c15 3 19 14 9 27Zm46 0C90 14 101 8 110 10c0 15-9 23-25 21ZM60 42C46 29 46 17 52 9c15 8 17 20 9 33ZM59 72C44 59 31 59 23 64c8 14 21 17 36 8Zm2 0c15-14 28-14 36-8-7 14-21 18-36 8Z" fill="currentColor" />
+        <path d="M40 83h40l-5 29H45l-5-29Z" fill="#b98f68" />
+        <path d="M38 83h44" stroke="#8c6748" stroke-width="3" stroke-linecap="round" />
+    </svg>
+</aside>
+
 {{-- Jasa unggulan --}}
 <section class="mt-8" aria-label="Jasa terbaru">
     <div class="mb-4 flex items-center justify-between">
