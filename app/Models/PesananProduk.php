@@ -2,17 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DibayarViaMidtrans;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PesananProduk extends Model
 {
+    use DibayarViaMidtrans;
+
     protected $table = 'pesanan_produk';
     public $timestamps = false;
 
     // Status, total, ongkir, admin, dan kurir TIDAK di fillable: diisi lewat kode server, bukan input user
-    protected $fillable = ['kode', 'customer_id', 'tanggal_pesan', 'metode_pembayaran', 'alamat_pengiriman'];
+    protected $fillable = [
+        'kode',
+        'invoice_number',
+        'snap_token',
+        'customer_id',
+        'tanggal_pesan',
+        'alamat_pengiriman',
+    ];
 
     protected function casts(): array
     {

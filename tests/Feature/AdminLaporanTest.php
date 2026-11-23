@@ -28,6 +28,8 @@ class AdminLaporanTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('kurir_id')->nullable();
@@ -39,7 +41,7 @@ class AdminLaporanTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -47,6 +49,8 @@ class AdminLaporanTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -54,7 +58,7 @@ class AdminLaporanTest extends TestCase
             $table->string('metode_pembayaran');
             $table->string('alamat_lokasi');
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -78,10 +82,10 @@ class AdminLaporanTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         $hariIni = now()->toDateString();
 
-        $this->buatPesananProduk('PSN-P-300', 50000, ['status_pembayaran' => 'lunas', 'tanggal_pesan' => $hariIni]);
-        $this->buatPesananJasa('PSN-J-300', 70000, ['status_pembayaran' => 'lunas', 'tanggal_pesan' => $hariIni]);
+        $this->buatPesananProduk('PSN-P-300', 50000, ['status_pembayaran' => 'paid', 'tanggal_pesan' => $hariIni]);
+        $this->buatPesananJasa('PSN-J-300', 70000, ['status_pembayaran' => 'paid', 'tanggal_pesan' => $hariIni]);
         // Belum lunas: tidak dihitung
-        $this->buatPesananJasa('PSN-J-301', 99000, ['status_pembayaran' => 'menunggu_bayar', 'tanggal_pesan' => $hariIni]);
+        $this->buatPesananJasa('PSN-J-301', 99000, ['status_pembayaran' => 'unpaid', 'tanggal_pesan' => $hariIni]);
 
         $this->withoutVite()
             ->actingAs($admin)
@@ -100,11 +104,11 @@ class AdminLaporanTest extends TestCase
         $kemarin = now()->subDay()->toDateString();
 
         $this->buatPesananProduk('PSN-P-310', 30000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'tanggal_pesan' => $kemarin,
         ]);
         $this->buatPesananJasa('PSN-J-310', 60000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'tanggal_pesan' => $kemarin,
         ]);
 

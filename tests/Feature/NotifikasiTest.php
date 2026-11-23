@@ -40,6 +40,8 @@ class NotifikasiTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('kurir_id')->nullable();
@@ -51,7 +53,7 @@ class NotifikasiTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -73,7 +75,7 @@ class NotifikasiTest extends TestCase
 
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('menunggu_konfirmasi');
         });
     }
@@ -82,15 +84,15 @@ class NotifikasiTest extends TestCase
     {
         [$customer] = $this->buatCustomer('Bayu Aji');
 
-        $this->buatPesananProduk($customer, 'PSN-N-001', 50000, ['status_pembayaran' => 'menunggu_verifikasi']);
-        $this->buatPesananProduk($customer, 'PSN-N-002', 50000, ['status_pembayaran' => 'menunggu_verifikasi']);
-        $this->buatPesananProduk($customer, 'PSN-N-003', 50000, ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dibayar']);
-        $this->buatPesananProduk($customer, 'PSN-N-004', 50000, ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dikirim']);
+        $this->buatPesananProduk($customer, 'PSN-N-001', 50000, ['status_pembayaran' => 'failed']);
+        $this->buatPesananProduk($customer, 'PSN-N-002', 50000, ['status_pembayaran' => 'failed']);
+        $this->buatPesananProduk($customer, 'PSN-N-003', 50000, ['status_pembayaran' => 'paid', 'status_pesanan' => 'dibayar']);
+        $this->buatPesananProduk($customer, 'PSN-N-004', 50000, ['status_pembayaran' => 'paid', 'status_pesanan' => 'dikirim']);
 
         DB::table('pesanan_jasa')->insert([
-            ['status_pembayaran' => 'menunggu_verifikasi', 'status_pesanan' => 'menunggu_konfirmasi'],
-            ['status_pembayaran' => 'lunas', 'status_pesanan' => 'menunggu_konfirmasi'],
-            ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dijadwalkan'],
+            ['status_pembayaran' => 'failed', 'status_pesanan' => 'menunggu_pembayaran'],
+            ['status_pembayaran' => 'paid', 'status_pesanan' => 'menunggu_pembayaran'],
+            ['status_pembayaran' => 'paid', 'status_pesanan' => 'dijadwalkan'],
         ]);
         DB::table('produk')->insert([
             ['nama' => 'Pot Kecil', 'stok' => 2],
@@ -101,7 +103,7 @@ class NotifikasiTest extends TestCase
 
         $this->assertSame(6, $hasil['total']);
         $this->assertSame([
-            'Pembayaran menunggu verifikasi' => 3,
+            'Pembayaran gagal' => 3,
             'Pesanan siap dikirim' => 1,
             'Jasa perlu dijadwalkan' => 1,
             'Produk stok menipis' => 1,
@@ -142,7 +144,7 @@ class NotifikasiTest extends TestCase
     public function test_a_missing_table_does_not_break_the_other_notifications(): void
     {
         [$customer] = $this->buatCustomer('Eka Putri');
-        $this->buatPesananProduk($customer, 'PSN-N-020', 50000, ['status_pembayaran' => 'menunggu_verifikasi']);
+        $this->buatPesananProduk($customer, 'PSN-N-020', 50000, ['status_pembayaran' => 'failed']);
 
         Schema::drop('pesanan_jasa');
         Schema::drop('produk');
@@ -155,13 +157,13 @@ class NotifikasiTest extends TestCase
     public function test_the_bell_is_shown_in_the_admin_layout_with_the_count(): void
     {
         [$customer] = $this->buatCustomer('Fajar Nur');
-        $this->buatPesananProduk($customer, 'PSN-N-030', 50000, ['status_pembayaran' => 'menunggu_verifikasi']);
+        $this->buatPesananProduk($customer, 'PSN-N-030', 50000, ['status_pembayaran' => 'failed']);
 
         $this->withoutVite()
             ->actingAs($this->createAccount('Admin Green Plant', 'admin'))
             ->get(route('admin.pengiriman.index'))
             ->assertOk()
-            ->assertSee('Pembayaran menunggu verifikasi')
+            ->assertSee('Pembayaran gagal')
             ->assertSee('1 menunggu');
     }
 

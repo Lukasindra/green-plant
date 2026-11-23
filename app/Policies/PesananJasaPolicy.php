@@ -13,21 +13,12 @@ class PesananJasaPolicy
         return $akun->isAdmin() || $pesanan->customer?->akun_id === $akun->id;
     }
 
-    // Unggah bukti hanya oleh pemilik, selama belum lunas, belum dibatalkan, dan bukan COD.
-    public function uploadBukti(Akun $akun, PesananJasa $pesanan): bool
-    {
-        return $pesanan->customer?->akun_id === $akun->id
-            && in_array($pesanan->status_pembayaran, ['menunggu_bayar', 'menunggu_verifikasi'], true)
-            && $pesanan->status_pesanan !== 'dibatalkan'
-            && $pesanan->metode_pembayaran !== 'cod';
-    }
-
-    // Customer hanya boleh membatalkan pesanannya sendiri sebelum mengunggah bukti bayar.
-    // Setelah itu (menunggu verifikasi atau lunas) pembatalan harus lewat admin.
+    // Customer hanya boleh membatalkan pesanannya sendiri selama pembayaran
+    // belum dikonfirmasi Midtrans (masih unpaid/failed) dan belum dijadwalkan/dikerjakan.
     public function batalkan(Akun $akun, PesananJasa $pesanan): bool
     {
         return $pesanan->customer?->akun_id === $akun->id
-            && $pesanan->status_pembayaran === 'menunggu_bayar'
-            && ! in_array($pesanan->status_pesanan, ['dibatalkan', 'dikirim', 'selesai', 'dijadwalkan', 'dikerjakan'], true);
+            && $pesanan->masihBelumDibayar()
+            && ! in_array($pesanan->status_pesanan ?? '', ['dibatalkan', 'dijadwalkan', 'dikerjakan', 'selesai'], true);
     }
 }

@@ -40,6 +40,8 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -49,7 +51,7 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -57,6 +59,8 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -65,7 +69,7 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
             $table->string('alamat_lokasi');
             $table->text('catatan')->nullable();
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -116,25 +120,24 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
         $this->assertDatabaseHas('pesanan_jasa', ['id' => $kemarin, 'status_pesanan' => 'diproses']);
     }
 
-    public function test_paid_waiting_verification_and_cod_orders_are_never_cancelled(): void
+    public function test_paid_failed_and_in_progress_orders_are_never_cancelled_by_command(): void
     {
         [$customer] = $this->buatCustomer('Tari Anggraini');
         $lama = $this->hariLalu(10);
 
-        $lunas = $this->buatPesananProduk($customer, 'PSN-P-310', 60000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'lunas']);
-        $verifikasi = $this->buatPesananProduk($customer, 'PSN-P-311', 60000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'menunggu_verifikasi']);
-        $cod = $this->buatPesananProduk($customer, 'PSN-P-312', 60000, ['tanggal_pesan' => $lama, 'metode_pembayaran' => 'cod']);
+        $lunas = $this->buatPesananProduk($customer, 'PSN-P-310', 60000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'paid']);
+        $gagal = $this->buatPesananProduk($customer, 'PSN-P-311', 60000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'failed']);
         $dikirim = $this->buatPesananProduk($customer, 'PSN-P-313', 60000, ['tanggal_pesan' => $lama, 'status_pesanan' => 'dikirim']);
-        $jasaLunas = $this->buatPesananJasa($customer, 'PSN-J-310', 80000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'lunas']);
-        $jasaCod = $this->buatPesananJasa($customer, 'PSN-J-311', 80000, ['tanggal_pesan' => $lama, 'metode_pembayaran' => 'cod']);
+        $jasaLunas = $this->buatPesananJasa($customer, 'PSN-J-310', 80000, ['tanggal_pesan' => $lama, 'status_pembayaran' => 'paid']);
+        $jasaJadwal = $this->buatPesananJasa($customer, 'PSN-J-311', 80000, ['tanggal_pesan' => $lama, 'status_pesanan' => 'dijadwalkan']);
 
         $this->artisan('pesanan:batalkan-kedaluwarsa')->assertSuccessful();
 
-        foreach ([$lunas, $verifikasi, $cod] as $id) {
+        foreach ([$lunas, $gagal] as $id) {
             $this->assertNotSame('dibatalkan', DB::table('pesanan_produk')->where('id', $id)->value('status_pesanan'));
         }
         $this->assertDatabaseHas('pesanan_produk', ['id' => $dikirim, 'status_pesanan' => 'dikirim']);
-        foreach ([$jasaLunas, $jasaCod] as $id) {
+        foreach ([$jasaLunas, $jasaJadwal] as $id) {
             $this->assertNotSame('dibatalkan', DB::table('pesanan_jasa')->where('id', $id)->value('status_pesanan'));
         }
     }

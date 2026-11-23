@@ -145,6 +145,12 @@
         @if (session('error'))
             <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
         @endif
+        @if (session('info'))
+            <div class="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">{{ session('info') }}</div>
+        @endif
+        @if (session('peringatan'))
+            <div class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{{ session('peringatan') }}</div>
+        @endif
 
         @yield('isi')
     </main>
@@ -169,10 +175,11 @@
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-brand-200">Metode Pembayaran</p>
                     <ul class="mt-3 flex flex-wrap gap-2">
-                        @foreach (config('toko.metode') as $namaMetode)
+                        @foreach (['QRIS', 'E-Wallet', 'Transfer Bank', 'Kartu'] as $namaMetode)
                             <li class="rounded-full border border-white/20 px-3 py-1 text-xs text-brand-100/90">{{ $namaMetode }}</li>
                         @endforeach
                     </ul>
+                    <p class="mt-2 text-xs text-brand-200/80">Diproses aman oleh Midtrans.</p>
                 </div>
             </div>
 

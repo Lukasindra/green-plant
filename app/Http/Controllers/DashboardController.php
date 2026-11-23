@@ -60,8 +60,8 @@ class DashboardController extends Controller
             })
             ->implode(' ');
 
-        // Kartu tindakan: pembayaran yang perlu diverifikasi dan produk dengan stok rendah
-        $menungguVerifikasi = $this->hitungMenungguVerifikasi();
+        // Kartu tindakan: pembayaran yang gagal dikonfirmasi Midtrans dan produk dengan stok rendah
+        $pembayaranGagal = $this->hitungPembayaranGagal();
         $stokRendah = $this->produkStokRendah();
 
         return view('admin.dashboard', [
@@ -73,19 +73,19 @@ class DashboardController extends Controller
             'salesChart' => $salesChart,
             'chartPoints' => $chartPoints,
             'puncakNilai' => $puncakNilai,
-            'menungguVerifikasi' => $menungguVerifikasi,
+            'pembayaranGagal' => $pembayaranGagal,
             'stokRendah' => $stokRendah,
         ]);
     }
 
-    // Jumlah pesanan (produk + jasa) yang bukti bayarnya menunggu diverifikasi admin
-    private function hitungMenungguVerifikasi(): int
+    // Jumlah pesanan (produk + jasa) yang pembayarannya gagal/kedaluwarsa di Midtrans
+    private function hitungPembayaranGagal(): int
     {
         $jumlah = 0;
 
         foreach ([PesananProduk::class, PesananJasa::class] as $model) {
             if (Schema::hasColumn((new $model)->getTable(), 'status_pembayaran')) {
-                $jumlah += $model::query()->where('status_pembayaran', 'menunggu_verifikasi')->count();
+                $jumlah += $model::query()->where('status_pembayaran', 'failed')->count();
             }
         }
 
@@ -126,7 +126,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Pesanan dalam rentang tanggal yang sudah lunas.
+     * Pesanan dalam rentang tanggal yang sudah lunas (paid di Midtrans).
      * Kalau tabelnya belum punya kolom status_pembayaran, semua pesanan ikut dihitung.
      */
     private function pesananBerbayar(string $model, CarbonImmutable $dari, CarbonImmutable $sampai): Collection
@@ -135,7 +135,7 @@ class DashboardController extends Controller
             ->whereBetween('tanggal_pesan', [$dari->toDateString(), $sampai->toDateString()]);
 
         if (Schema::hasColumn((new $model)->getTable(), 'status_pembayaran')) {
-            $query->where('status_pembayaran', 'lunas');
+            $query->where('status_pembayaran', 'paid');
         }
 
         return $query->get(['tanggal_pesan', 'total_bayar']);

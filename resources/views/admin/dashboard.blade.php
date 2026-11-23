@@ -63,15 +63,15 @@
         </x-card>
     </section>
 
-    @if ($menungguVerifikasi > 0 || $stokRendah->isNotEmpty())
+    @if ($pembayaranGagal > 0 || $stokRendah->isNotEmpty())
         <section aria-label="Perlu tindakan" class="grid gap-4 sm:grid-cols-2">
-            @if ($menungguVerifikasi > 0)
-                <a href="{{ route('admin.pembayaran.index', ['jenis' => 'menunggu_verifikasi']) }}"
+            @if ($pembayaranGagal > 0)
+                <a href="{{ route('admin.pembayaran.index', ['jenis' => 'failed']) }}"
                     class="flex items-center gap-4 rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm transition hover:bg-amber-100">
                     <span class="rounded-lg bg-amber-100 p-3 text-amber-700" aria-hidden="true"><x-sidebar-ikon nama="jam" class="h-6 w-6" /></span>
                     <span class="min-w-0">
-                        <span class="block font-semibold text-amber-900">{{ $menungguVerifikasi }} pembayaran menunggu verifikasi</span>
-                        <span class="mt-0.5 block text-xs text-amber-700">Periksa bukti bayar &amp; konfirmasi COD sekarang &rarr;</span>
+                        <span class="block font-semibold text-amber-900">{{ $pembayaranGagal }} pembayaran gagal/kedaluwarsa</span>
+                        <span class="mt-0.5 block text-xs text-amber-700">Periksa statusnya di halaman Pembayaran &rarr;</span>
                     </span>
                 </a>
             @endif

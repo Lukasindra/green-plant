@@ -34,23 +34,18 @@
         </div>
     </section>
 
-    {{-- Metode pembayaran --}}
+    {{-- Pembayaran --}}
     <section class="rounded-xl border border-gray-200 bg-white p-5">
-        <h2 class="mb-3 text-sm font-semibold">Pilih Metode Pembayaran</h2>
+        <h2 class="mb-3 text-sm font-semibold">Pembayaran via Midtrans</h2>
 
-        <div class="space-y-2" role="radiogroup" aria-label="Metode pembayaran">
-            @foreach (config('toko.metode') as $kode => $nama)
-                <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm hover:bg-gray-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
-                    <input type="radio" name="metode_pembayaran" value="{{ $kode }}" class="accent-brand-700"
-                           @checked(old('metode_pembayaran', 'transfer') === $kode) required>
-                    <span>{{ $nama }}</span>
-                </label>
+        <div class="mb-4 grid grid-cols-2 gap-2 text-center text-xs text-gray-600 sm:grid-cols-4">
+            @foreach (['QRIS', 'E-Wallet', 'Transfer Bank', 'Kartu'] as $metode)
+                <span class="rounded-lg border border-gray-200 px-2 py-2">{{ $metode }}</span>
             @endforeach
         </div>
-        @error('metode_pembayaran') <p class="mt-2 text-sm text-red-700">{{ $message }}</p> @enderror
 
-        <x-button class="mt-5 w-full py-3">Buat Pesanan</x-button>
-        <p class="mt-2 text-center text-xs text-gray-500">Pembayaran dikonfirmasi manual oleh admin setelah bukti diunggah.</p>
+        <x-button class="w-full py-3">Buat Pesanan &amp; Bayar</x-button>
+        <p class="mt-2 text-center text-xs text-gray-500">Jendela pembayaran Midtrans (Snap) akan terbuka setelah pesanan dibuat.</p>
     </section>
 </form>
 @endsection

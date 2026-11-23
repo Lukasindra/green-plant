@@ -25,10 +25,10 @@ class LaporanController extends Controller
 
         $basisProduk = PesananProduk::query()
             ->whereBetween('tanggal_pesan', [$awal, $akhir])
-            ->when($punyaStatusProduk, fn ($q) => $q->where('status_pembayaran', 'lunas'));
+            ->when($punyaStatusProduk, fn ($q) => $q->where('status_pembayaran', 'paid'));
         $basisJasa = PesananJasa::query()
             ->whereBetween('tanggal_pesan', [$awal, $akhir])
-            ->when($punyaStatusJasa, fn ($q) => $q->where('status_pembayaran', 'lunas'));
+            ->when($punyaStatusJasa, fn ($q) => $q->where('status_pembayaran', 'paid'));
 
         $rekap = $basisProduk->clone()
             ->selectRaw('tanggal_pesan as tanggal, count(*) as jumlah, coalesce(sum(total_bayar),0) as nilai')

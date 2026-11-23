@@ -39,6 +39,8 @@ class KurirPengirimanTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('kurir_id')->nullable();
@@ -50,7 +52,7 @@ class KurirPengirimanTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -159,7 +161,7 @@ class KurirPengirimanTest extends TestCase
         $rizal = $this->buatKurir('Rizal', 'Rizal Kurir');
         $produkId = DB::table('produk')->insertGetId(['nama' => 'Pot Tanah', 'stok' => 5]);
         $id = $this->buatPesananProduk($customer, 'PSN-K-020', 60000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dikirim',
             'kurir_id' => $rizal,
         ]);
@@ -175,7 +177,7 @@ class KurirPengirimanTest extends TestCase
         $this->assertDatabaseHas('pesanan_produk', [
             'id' => $id,
             'status_pesanan' => 'selesai',
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
         ]);
         $this->assertNotNull(DB::table('pesanan_produk')->where('id', $id)->value('tanggal_selesai'));
         // Stok tidak disentuh kurir
@@ -188,7 +190,7 @@ class KurirPengirimanTest extends TestCase
         $rizal = $this->buatKurir('Rizal', 'Rizal Kurir');
         $dewi = $this->buatKurir('Dewi', 'Dewi Kurir');
         $id = $this->buatPesananProduk($customer, 'PSN-K-030', 50000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dikirim',
             'kurir_id' => $dewi,
         ]);
@@ -205,7 +207,7 @@ class KurirPengirimanTest extends TestCase
         [$customer] = $this->buatCustomer('Gita Sari');
         $rizal = $this->buatKurir('Rizal', 'Rizal Kurir');
         $id = $this->buatPesananProduk($customer, 'PSN-K-040', 50000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dibayar',
             'kurir_id' => $rizal,
         ]);

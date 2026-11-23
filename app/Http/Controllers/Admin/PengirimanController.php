@@ -21,7 +21,7 @@ class PengirimanController extends Controller
 
         $query = PesananProduk::query()
             ->with(['customer.akun', 'detail'])
-            ->where('status_pembayaran', 'lunas')
+            ->where('status_pembayaran', 'paid')
             ->orderByDesc('id');
 
         $query->when($punyaKolomStatus, function ($q) use ($status) {
@@ -55,7 +55,7 @@ class PengirimanController extends Controller
     {
         $punyaKolomStatus = Schema::hasColumn((new PesananProduk)->getTable(), 'status_pesanan');
         $statusPesanan = $punyaKolomStatus ? ($pesanan->status_pesanan ?? 'diproses') : 'diproses';
-        $lunas = in_array($pesanan->status_pembayaran, ['lunas', 'dibayar'], true);
+        $lunas = $pesanan->status_pembayaran === 'paid';
 
         $pesan = match ($request->input('aksi')) {
             'kirim' => $this->aksiKirim($request, $pesanan, $lunas, $punyaKolomStatus, $statusPesanan),

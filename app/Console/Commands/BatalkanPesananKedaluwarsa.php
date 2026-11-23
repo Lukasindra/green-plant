@@ -38,8 +38,7 @@ class BatalkanPesananKedaluwarsa extends Command
             }
 
             $query = $model::query()
-                ->where('status_pembayaran', 'menunggu_bayar')      // belum ada bukti bayar
-                ->where('metode_pembayaran', '!=', 'cod')           // COD dibayar saat serah terima, bukan di muka
+                ->where('status_pembayaran', 'unpaid')             // belum dibayar via Midtrans
                 ->whereNotIn('status_pesanan', ['dibatalkan', 'selesai', 'dikirim', 'dijadwalkan', 'dikerjakan'])
                 ->whereDate('tanggal_pesan', '<=', $batas);
 
@@ -49,7 +48,7 @@ class BatalkanPesananKedaluwarsa extends Command
                 continue;
             }
 
-            // Stok produk baru berkurang saat lunas, jadi tidak ada stok yang perlu dikembalikan.
+            // Stok produk baru berkurang saat Midtrans sukses, jadi tidak ada stok yang perlu dikembalikan.
             $jumlah = $query->update(['status_pesanan' => 'dibatalkan']);
 
             $this->info("Pesanan {$nama} dibatalkan: {$jumlah}");

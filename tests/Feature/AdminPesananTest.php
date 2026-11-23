@@ -40,6 +40,8 @@ class AdminPesananTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -49,7 +51,7 @@ class AdminPesananTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -57,6 +59,8 @@ class AdminPesananTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -65,7 +69,7 @@ class AdminPesananTest extends TestCase
             $table->string('alamat_lokasi');
             $table->text('catatan')->nullable();
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -131,51 +135,26 @@ class AdminPesananTest extends TestCase
             ->assertDontSee('PSN-P-002');
 
         $this->actingAs($admin)
-            ->get(route('admin.pesanan.index', ['status' => 'lunas']))
+            ->get(route('admin.pesanan.index', ['status' => 'paid']))
             ->assertOk()
             ->assertDontSee('PSN-P-002')
             ->assertDontSee('PSN-J-002');
     }
 
-    public function test_admin_can_verify_upload_payment_proof_for_product_order(): void
+    public function test_admin_does_not_verify_payments_anymore(): void
     {
+        // Pembayaran kini diverifikasi Midtrans Snap: aksi verifikasi/tolak/konfirmasi COD tidak ada lagi.
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Andi Wijaya');
-        $id = $this->buatPesananProduk($customer, 'PSN-P-003', 45000, [
-            'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_bayar' => 'bukti-bayar/fake.png',
-        ]);
+        $id = $this->buatPesananProduk($customer, 'PSN-P-003', 45000);
 
         $this->actingAs($admin)
             ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'verifikasi_bayar'])
-            ->assertRedirect(route('admin.pesanan.index', ['tipe' => 'produk']))
-            ->assertSessionHas('status', 'Pembayaran berhasil diverifikasi.');
+            ->assertSessionHas('error', 'Aksi tidak dapat diterapkan pada status pesanan ini.');
 
         $this->assertDatabaseHas('pesanan_produk', [
             'id' => $id,
-            'status_pembayaran' => 'lunas',
-            'admin_id' => null,
-        ]);
-        $this->assertNotNull(DB::table('pesanan_produk')->find($id)->tanggal_bayar);
-    }
-
-    public function test_admin_can_reject_upload_payment_proof(): void
-    {
-        $admin = $this->createAccount('Admin Green Plant', 'admin');
-        [$customer] = $this->buatCustomer('Rina Kusuma');
-        $id = $this->buatPesananJasa($customer, 'PSN-J-003', 65000, [
-            'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_bayar' => 'bukti-bayar/fake.png',
-        ]);
-
-        $this->actingAs($admin)
-            ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'tolak_bayar'])
-            ->assertRedirect(route('admin.pesanan.index', ['tipe' => 'jasa']))
-            ->assertSessionHas('status', 'Bukti bayar ditolak. Pesanan kembali menunggu pembayaran.');
-
-        $this->assertDatabaseHas('pesanan_jasa', [
-            'id' => $id,
-            'status_pembayaran' => 'menunggu_bayar',
+            'status_pembayaran' => 'unpaid',
         ]);
     }
 
@@ -184,7 +163,7 @@ class AdminPesananTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Tono Hartanto');
         $id = $this->buatPesananProduk($customer, 'PSN-P-004', 120000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
         ]);
 
         $this->actingAs($admin)
@@ -212,7 +191,7 @@ class AdminPesananTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Gita Maharani');
         $id = $this->buatPesananJasa($customer, 'PSN-J-004', 90000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
         ]);
 
         $this->actingAs($admin)
@@ -230,10 +209,10 @@ class AdminPesananTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Wawan Pratama');
         $belumLunas = $this->buatPesananProduk($customer, 'PSN-P-005', 30000, [
-            'status_pembayaran' => 'menunggu_bayar',
+            'status_pembayaran' => 'unpaid',
         ]);
         $lunas = $this->buatPesananProduk($customer, 'PSN-P-006', 46000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
         ]);
 
         $this->actingAs($admin)
@@ -266,7 +245,7 @@ class AdminPesananTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($customer)
-            ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'verifikasi_bayar'])
+            ->post(route('admin.pesanan.produk.aksi', $id), ['aksi' => 'dikirim'])
             ->assertForbidden();
     }
 

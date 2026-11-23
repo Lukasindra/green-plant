@@ -10,7 +10,7 @@
 
         $punyaStatusPesanan = isset($pesanan->status_pesanan);
         $statusPesanan = $punyaStatusPesanan ? ($pesanan->status_pesanan ?? 'diproses') : 'diproses';
-        $lunas = in_array($pesanan->status_pembayaran, ['lunas', 'dibayar'], true);
+        $lunas = $pesanan->status_pembayaran === 'paid';
         $dibatalkan = $punyaStatusPesanan && $statusPesanan === 'dibatalkan';
     @endphp
 
@@ -24,9 +24,10 @@
 
             <dl class="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm">
                 <dt class="text-gray-500">Kode</dt><dd class="font-medium">{{ $pesanan->kode }}</dd>
+                <dt class="text-gray-500">Invoice</dt><dd class="font-medium">{{ $pesanan->invoice_number ?? '-' }}</dd>
                 <dt class="text-gray-500">Pelanggan</dt><dd>{{ $pesanan->customer?->akun?->nama ?? '-' }}</dd>
                 <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan?->format('d M Y') }}</dd>
-                <dt class="text-gray-500">Metode</dt><dd>{{ config('toko.metode.'.$pesanan->metode_pembayaran, $pesanan->metode_pembayaran) }}</dd>
+                <dt class="text-gray-500">Metode</dt><dd>Midtrans Snap</dd>
                 <dt class="text-gray-500">Pembayaran</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
                 <dt class="text-gray-500">Status</dt>
                 <dd>
@@ -76,48 +77,12 @@
         <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 class="mb-3 font-semibold text-gray-900">Pembayaran</h2>
 
-            @if ($pesanan->bukti_bayar)
-                <div class="mb-4 overflow-hidden rounded-lg border border-gray-200">
-                    <img src="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
-                         alt="Bukti pembayaran {{ $pesanan->kode }}"
-                         class="h-64 w-full bg-gray-50 object-contain" decoding="async">
-                    <a href="{{ route('admin.pesanan.bukti', ['tipe' => $tipe, 'id' => $pesanan->id]) }}"
-                        target="_blank" rel="noopener"
-                        class="flex items-center justify-center gap-1 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-brand-800">
-                        Buka ukuran penuh &#8599;
-                    </a>
-                </div>
-            @else
-                <p class="mb-4 rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">Belum ada bukti pembayaran yang diunggah.</p>
-            @endif
+            <p class="mb-4 rounded-md bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                Pembayaran diproses oleh <strong>Midtrans Snap</strong>. Status lunas/gagal ditetapkan otomatis, bukan diverifikasi manual.
+            </p>
 
             @unless ($dibatalkan)
                 <div class="flex flex-col gap-2 border-t border-gray-100 pt-4">
-                    @if ($pesanan->status_pembayaran === 'menunggu_verifikasi')
-                        <form method="POST" action="{{ $ruteAksi }}">
-                            @csrf
-                            <input type="hidden" name="dari" value="detail">
-                            <input type="hidden" name="aksi" value="verifikasi_bayar">
-                            <x-button class="w-full">Verifikasi Bukti Bayar</x-button>
-                        </form>
-                        <form method="POST" action="{{ $ruteAksi }}"
-                            onsubmit="return confirm('Tolak bukti bayar pesanan {{ $pesanan->kode }}? Customer diminta mengunggah ulang.')">
-                            @csrf
-                            <input type="hidden" name="dari" value="detail">
-                            <input type="hidden" name="aksi" value="tolak_bayar">
-                            <x-button varian="outline" class="w-full">Tolak Bukti Bayar</x-button>
-                        </form>
-                    @endif
-
-                    @if ($pesanan->metode_pembayaran === 'cod' && $pesanan->status_pembayaran === 'menunggu_bayar')
-                        <form method="POST" action="{{ $ruteAksi }}"
-                            onsubmit="return confirm('Konfirmasi pesanan {{ $pesanan->kode }} (COD) sudah dibayar lunas?')">
-                            @csrf
-                            <input type="hidden" name="dari" value="detail">
-                            <input type="hidden" name="aksi" value="konfirmasi_cod">
-                            <x-button class="w-full">Konfirmasi COD</x-button>
-                        </form>
-                    @endif
 
                     @if ($tipe === 'produk' && $lunas && ! in_array($statusPesanan, ['dikirim', 'selesai'], true))
                         <form method="POST" action="{{ $ruteAksi }}">
@@ -158,7 +123,7 @@
                         </form>
                     @endif
 
-                    @if (! $lunas && $pesanan->status_pembayaran !== 'menunggu_verifikasi' && ! in_array($statusPesanan, ['dikirim', 'selesai'], true))
+                    @if (! $lunas && ! in_array($statusPesanan, ['dikirim', 'selesai'], true))
                         <form method="POST" action="{{ $ruteAksi }}" onsubmit="return confirm('Yakin ingin membatalkan pesanan ini?')">
                             @csrf
                             <input type="hidden" name="dari" value="detail">

@@ -50,9 +50,9 @@
     <h2 class="text-sm font-semibold">Cara Memesan</h2>
     <ol class="mt-4 grid gap-4 text-sm text-gray-600 sm:grid-cols-4">
         <li><span class="font-semibold text-brand-700">1.</span> Pilih produk atau jasa, lalu masukkan ke keranjang.</li>
-        <li><span class="font-semibold text-brand-700">2.</span> Isi alamat dan pilih metode pembayaran di halaman checkout.</li>
-        <li><span class="font-semibold text-brand-700">3.</span> Unggah bukti pembayaran di halaman pesanan Anda.</li>
-        <li><span class="font-semibold text-brand-700">4.</span> Tim kami verifikasi, lalu pesanan dikirim atau dikerjakan.</li>
+        <li><span class="font-semibold text-brand-700">2.</span> Isi alamat pengiriman di halaman checkout.</li>
+        <li><span class="font-semibold text-brand-700">3.</span> Bayar lewat jendela Midtrans (QRIS, e-wallet, transfer, atau kartu).</li>
+        <li><span class="font-semibold text-brand-700">4.</span> Setelah lunas, pesanan dikirim atau jasa dikerjakan.</li>
     </ol>
 </section>
 @endsection

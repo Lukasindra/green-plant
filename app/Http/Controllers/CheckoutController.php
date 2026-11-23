@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\DetailPesananProduk;
 use App\Models\PesananProduk;
 use App\Models\Produk;
+use App\Services\MidtransService;
 use App\Support\Toko;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
@@ -70,10 +72,8 @@ class CheckoutController extends Controller
 
         $data = $request->validate([
             'alamat_pengiriman' => ['required', 'string', 'max:500'],
-            'metode_pembayaran' => ['required', 'in:transfer,qris,ewallet,cod'],
         ], [
             'alamat_pengiriman.required' => 'Alamat pengiriman wajib diisi.',
-            'metode_pembayaran.required' => 'Pilih metode pembayaran.',
         ]);
 
         [$baris, $subtotal] = $this->hitungKeranjang();
@@ -92,17 +92,26 @@ class CheckoutController extends Controller
 
         $ongkir = Toko::ongkir();
 
+        // Satu record pesanan (status unpaid) + Snap token; stok dipotong setelah Midtrans sukses.
         $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal, $ongkir) {
+            $punyaStatusPesanan = Schema::hasColumn('pesanan_produk', 'status_pesanan');
+
             $pesanan = new PesananProduk([
                 'kode'              => 'PRD-' . now()->format('ymd') . '-' . strtoupper(Str::random(4)),
                 'customer_id'       => $customer->id,
                 'tanggal_pesan'     => now()->toDateString(),
-                'metode_pembayaran' => $data['metode_pembayaran'],
                 'alamat_pengiriman' => $data['alamat_pengiriman'],
             ]);
-            $pesanan->ongkir      = $ongkir;
-            $pesanan->total_bayar = $subtotal + $ongkir;
-            $pesanan->save();   // status_pembayaran dan status_pesanan memakai nilai bawaan database
+            $pesanan->invoice_number = $pesanan->buatInvoiceNumber();
+            $pesanan->ongkir         = $ongkir;
+            $pesanan->total_bayar    = $subtotal + $ongkir;
+            $pesanan->status_pembayaran = PesananProduk::STATUS_UNPAID;
+
+            if ($punyaStatusPesanan) {
+                $pesanan->status_pesanan = 'menunggu_pembayaran';
+            }
+
+            $pesanan->save();
 
             foreach ($baris as $b) {
                 DetailPesananProduk::create([
@@ -117,10 +126,47 @@ class CheckoutController extends Controller
             return $pesanan;
         });
 
-        // Stok dikurangi nanti, saat admin mengonfirmasi pembayaran (bukan saat pesanan dibuat)
+        // Order sudah sah tersimpan: kosongkan keranjang sekarang juga.
+        // Kalau pembuatan token gagal, user tetap hanya punya SATU order (bayar lewat "Coba Bayar Ulang").
         session()->forget('cart');
 
-        return redirect()->route('pesanan.show', $pesanan)
-            ->with('status', 'Pesanan berhasil dibuat. Silakan selesaikan pembayaran.');
+        try {
+            $orderId = $pesanan->invoice_number;   // order_id awal = invoice_number
+            $pesanan->snap_token = app(MidtransService::class)->snapToken(
+                $orderId,
+                (int) $pesanan->total_bayar,
+                MidtransService::itemDetails(
+                    collect($baris)->map(fn ($b) => [
+                        'id'    => 'produk-' . $b['produk']->id,
+                        'nama'  => $b['produk']->nama,
+                        'harga' => $b['produk']->harga,
+                        'qty'   => $b['qty'],
+                    ]),
+                    $ongkir
+                ),
+                [
+                    'nama'  => Auth::user()->nama,
+                    'email' => Auth::user()->email,
+                    'no_hp' => Auth::user()->no_hp,
+                ]
+            );
+            $pesanan->save();
+        } catch (\Throwable $e) {
+            // Pesanan tetap tersimpan (unpaid, token kosong); user bisa memakai "Coba Bayar Ulang".
+            report($e);
+
+            return redirect()->route('payment.show', ['tipe' => 'produk', 'pesanan' => $pesanan->id])
+                ->with('error', $this->pesanError($e));
+        }
+
+        return redirect()->route('payment.show', ['tipe' => 'produk', 'pesanan' => $pesanan->id])
+            ->with('status', 'Pesanan berhasil dibuat. Selesaikan pembayaran pada jendela yang terbuka.');
+    }
+
+    private function pesanError(\Throwable $e): string
+    {
+        return $e instanceof \RuntimeException
+            ? $e->getMessage()
+            : 'Gagal membuat token pembayaran Midtrans. Silakan coba "Coba Bayar Ulang".';
     }
 }

@@ -8,10 +8,11 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Membaca pengaturan toko yang diisi admin (tabel `pengaturan`),
  * dengan cadangan ke config/toko.php bila tabel/isinya belum ada.
+ * Pembayaran diproses Midtrans, jadi rekening/e-wallet toko tidak lagi dipakai.
  */
 class Toko
 {
-    private const KUNCI = ['ongkir', 'rekening', 'ewallet'];
+    private const KUNCI = ['ongkir'];
 
     private static function tersimpan(): array
     {
@@ -34,7 +35,7 @@ class Toko
             $nilai = json_decode((string) $semua[$kunci], true);
 
             if ($nilai !== null) {
-                return $nilai;   // 0 (ongkir gratis) dan [] (daftar kosong) tetap dianggap nilai sah
+                return $nilai;   // 0 (ongkir gratis) tetap dianggap nilai sah
             }
         }
 
@@ -44,15 +45,5 @@ class Toko
     public static function ongkir(): int
     {
         return max(0, (int) self::baca('ongkir', config('toko.ongkir', 0)));
-    }
-
-    public static function rekening(): array
-    {
-        return (array) self::baca('rekening', config('toko.rekening', []));
-    }
-
-    public static function ewallet(): array
-    {
-        return (array) self::baca('ewallet', config('toko.ewallet', []));
     }
 }

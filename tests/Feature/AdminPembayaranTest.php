@@ -39,6 +39,8 @@ class AdminPembayaranTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -47,7 +49,7 @@ class AdminPembayaranTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -55,6 +57,8 @@ class AdminPembayaranTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -62,7 +66,7 @@ class AdminPembayaranTest extends TestCase
             $table->string('metode_pembayaran');
             $table->string('alamat_lokasi');
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -104,22 +108,20 @@ class AdminPembayaranTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Bayu Aji');
         $this->buatPesananProduk($customer, 'PSN-P-100', 55000, [
-            'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_bayar' => 'bukti-bayar/p100.png',
+            'invoice_number' => 'INV-20261026-AAAA',
         ]);
         $this->buatPesananJasa($customer, 'PSN-J-100', 85000, [
-            'metode_pembayaran' => 'cod',
+            'status_pembayaran' => 'paid',
         ]);
 
         $this->withoutVite()
             ->actingAs($admin)
             ->get(route('admin.pembayaran.index'))
             ->assertOk()
-            ->assertSee('PSN-P-100')
+            ->assertSee('INV-20261026-AAAA')
             ->assertSee('Bayu Aji')
-            ->assertSee('Verifikasi')
             ->assertDontSee('PSN-J-100')
-            ->assertSee('Menunggu Bayar')
+            ->assertSee('Belum Dibayar')
             ->assertSee('Rp 85.000');
     }
 
@@ -127,44 +129,20 @@ class AdminPembayaranTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Citra Ayu');
-        $this->buatPesananProduk($customer, 'PSN-P-101', 35000, ['status_pembayaran' => 'lunas']);
-        $this->buatPesananJasa($customer, 'PSN-J-101', 95000, ['metode_pembayaran' => 'cod']);
+        $this->buatPesananProduk($customer, 'PSN-P-101', 35000, ['status_pembayaran' => 'paid']);
+        $this->buatPesananJasa($customer, 'PSN-J-101', 95000);
 
         $this->actingAs($admin)
-            ->get(route('admin.pembayaran.index', ['jenis' => 'lunas']))
+            ->get(route('admin.pembayaran.index', ['jenis' => 'paid']))
             ->assertOk()
             ->assertSee('PSN-P-101')
             ->assertDontSee('PSN-J-101');
 
         $this->actingAs($admin)
-            ->get(route('admin.pembayaran.index', ['jenis' => 'menunggu_bayar', 'tipe' => 'jasa']))
+            ->get(route('admin.pembayaran.index', ['jenis' => 'unpaid', 'tipe' => 'jasa']))
             ->assertOk()
             ->assertSee('PSN-J-101')
-            ->assertSee('Konfirmasi COD')
             ->assertDontSee('PSN-P-101');
-    }
-
-    public function test_quick_action_stays_on_the_payment_page(): void
-    {
-        $admin = $this->createAccount('Admin Green Plant', 'admin');
-        [$customer] = $this->buatCustomer('Dodi Rahmat');
-        $id = $this->buatPesananJasa($customer, 'PSN-J-102', 70000, [
-            'status_pembayaran' => 'menunggu_verifikasi',
-            'bukti_bayar' => 'bukti-bayar/j102.png',
-        ]);
-
-        $this->actingAs($admin)
-            ->post(route('admin.pesanan.jasa.aksi', $id), [
-                'dari' => 'pembayaran',
-                'aksi' => 'verifikasi_bayar',
-            ])
-            ->assertRedirect(route('admin.pembayaran.index'))
-            ->assertSessionHas('status', 'Pembayaran berhasil diverifikasi.');
-
-        $this->assertDatabaseHas('pesanan_jasa', [
-            'id' => $id,
-            'status_pembayaran' => 'lunas',
-        ]);
     }
 
     private function createAccount(string $name, string $role): Akun

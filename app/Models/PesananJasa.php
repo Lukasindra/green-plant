@@ -2,16 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DibayarViaMidtrans;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PesananJasa extends Model
 {
+    use DibayarViaMidtrans;
+
     protected $table = 'pesanan_jasa';
     public $timestamps = false;
 
-    protected $fillable = ['kode', 'customer_id', 'tanggal_pesan', 'metode_pembayaran', 'alamat_lokasi', 'catatan'];
+    protected $fillable = [
+        'kode',
+        'invoice_number',
+        'snap_token',
+        'customer_id',
+        'tanggal_pesan',
+        'alamat_lokasi',
+        'catatan',
+    ];
 
     protected function casts(): array
     {

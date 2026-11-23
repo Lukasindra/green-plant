@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
+/**
+ * Pemantauan status pembayaran Midtrans (unpaid/paid/failed).
+ * Tidak ada lagi aksi verifikasi: status ditetapkan oleh Midtrans Snap.
+ */
 class PembayaranController extends Controller
 {
     public function index(Request $request): View
@@ -17,9 +21,9 @@ class PembayaranController extends Controller
             ? $request->query('tipe')
             : 'semua';
 
-        $jenis = in_array($request->query('jenis'), ['menunggu_bayar', 'menunggu_verifikasi', 'lunas'], true)
+        $jenis = in_array($request->query('jenis'), ['unpaid', 'paid', 'failed'], true)
             ? $request->query('jenis')
-            : 'menunggu_verifikasi';
+            : 'unpaid';
 
         $semua = $this->ambilPesanan($tipe, $jenis);
 
@@ -35,18 +39,18 @@ class PembayaranController extends Controller
         );
 
         $ringkasan = [];
-        foreach (['menunggu_verifikasi', 'menunggu_bayar', 'lunas'] as $k) {
+        foreach (['unpaid', 'paid', 'failed'] as $k) {
             $data = $this->ambilPesanan($tipe, $k);
             $ringkasan[$k] = [
                 'jumlah' => $data->count(),
-                'nilai' => (int) $data->sum('total_bayar'),
+                'nilai'  => (int) $data->sum('total_bayar'),
             ];
         }
 
         return view('admin.pembayaran.index', [
-            'pesanan' => $pesanan,
-            'tipe' => $tipe,
-            'jenis' => $jenis,
+            'pesanan'   => $pesanan,
+            'tipe'      => $tipe,
+            'jenis'     => $jenis,
             'ringkasan' => $ringkasan,
         ]);
     }
@@ -55,7 +59,7 @@ class PembayaranController extends Controller
     {
         $modelTipe = [
             'produk' => PesananProduk::class,
-            'jasa' => PesananJasa::class,
+            'jasa'   => PesananJasa::class,
         ];
 
         $hasil = collect();

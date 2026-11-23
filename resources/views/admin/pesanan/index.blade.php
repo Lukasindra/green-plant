@@ -6,9 +6,9 @@
     @php
         $daftarStatus = [
             '' => 'Semua status',
-            'menunggu_bayar' => 'Menunggu bayar',
-            'menunggu_verifikasi' => 'Menunggu verifikasi',
-            'lunas' => 'Lunas',
+            'unpaid' => 'Belum dibayar',
+            'paid' => 'Lunas',
+            'failed' => 'Pembayaran gagal',
             'dijadwalkan' => 'Dijadwalkan',
             'dikerjakan' => 'Dikerjakan',
             'dikirim' => 'Dikirim',
@@ -94,13 +94,6 @@
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-5 py-3.5">
                                         <div class="flex items-center justify-end gap-3">
-                                            @if ($item->status_pembayaran === 'menunggu_verifikasi')
-                                                <form method="POST" action="{{ $ruteDetail === 'admin.pesanan.jasa.show' ? route('admin.pesanan.jasa.aksi', $item) : route('admin.pesanan.produk.aksi', $item) }}">
-                                                    @csrf
-                                                    <input type="hidden" name="aksi" value="verifikasi_bayar">
-                                                    <button type="submit" class="font-medium text-brand-800 hover:text-brand-900">Verifikasi</button>
-                                                </form>
-                                            @endif
                                             <a href="{{ route($ruteDetail, $item) }}" class="font-medium text-brand-800 hover:text-brand-900">Detail</a>
                                         </div>
                                     </td>

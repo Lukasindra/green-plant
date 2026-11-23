@@ -37,25 +37,25 @@ class Notifikasi
 
     private static function untukAdmin(): array
     {
-        $verifikasi = self::hitung(fn () => PesananProduk::query()->where('status_pembayaran', 'menunggu_verifikasi')->count())
-            + self::hitung(fn () => PesananJasa::query()->where('status_pembayaran', 'menunggu_verifikasi')->count());
+        $gagal = self::hitung(fn () => PesananProduk::query()->where('status_pembayaran', 'failed')->count())
+            + self::hitung(fn () => PesananJasa::query()->where('status_pembayaran', 'failed')->count());
 
         $siapKirim = self::hitung(fn () => PesananProduk::query()
-            ->where('status_pembayaran', 'lunas')
+            ->where('status_pembayaran', 'paid')
             ->whereIn('status_pesanan', ['dibayar', 'diproses', 'menunggu_pembayaran'])
             ->count());
 
         $perluJadwal = self::hitung(fn () => PesananJasa::query()
-            ->where('status_pembayaran', 'lunas')
+            ->where('status_pembayaran', 'paid')
             ->whereNotIn('status_pesanan', ['dijadwalkan', 'dikerjakan', 'selesai', 'dibatalkan'])
             ->count());
 
         $stokRendah = self::hitung(fn () => Produk::query()->where('stok', '<=', self::BATAS_STOK_RENDAH)->count());
 
         return self::susun([
-            ['Pembayaran menunggu verifikasi', 'Periksa bukti bayar dari customer', $verifikasi, route('admin.pembayaran.index', ['jenis' => 'menunggu_verifikasi'])],
+            ['Pembayaran gagal', 'Pesanan gagal/kedaluwarsa dibayar, periksa statusnya', $gagal, route('admin.pembayaran.index', ['jenis' => 'failed'])],
             ['Pesanan siap dikirim', 'Pilih kurir lalu tandai dikirim', $siapKirim, route('admin.pengiriman.index')],
-            ['Jasa perlu dijadwalkan', 'Sudah dibayar, belum ada jadwal pengerjaan', $perluJadwal, route('admin.pesanan.index', ['tipe' => 'jasa', 'status' => 'lunas'])],
+            ['Jasa perlu dijadwalkan', 'Sudah dibayar, belum ada jadwal pengerjaan', $perluJadwal, route('admin.pesanan.index', ['tipe' => 'jasa', 'status' => 'paid'])],
             ['Produk stok menipis', 'Stok '.self::BATAS_STOK_RENDAH.' atau kurang', $stokRendah, route('admin.produk.index')],
         ]);
     }

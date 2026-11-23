@@ -1,6 +1,11 @@
 @props(['nilai'])
 @php
     $peta = [
+        // Status pembayaran Midtrans
+        'unpaid'               => ['Belum dibayar',        'bg-amber-100 text-amber-800'],
+        'paid'                 => ['Lunas',                'bg-brand-100 text-brand-800'],
+        'failed'               => ['Pembayaran gagal',     'bg-red-100 text-red-800'],
+        // Nilai lama (pesanan sebelum migrasi)
         'menunggu_bayar'       => ['Belum dibayar',        'bg-amber-100 text-amber-800'],
         'menunggu_verifikasi'  => ['Menunggu verifikasi',  'bg-blue-100 text-blue-800'],
         'lunas'                => ['Lunas',                'bg-brand-100 text-brand-800'],

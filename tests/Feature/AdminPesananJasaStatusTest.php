@@ -40,6 +40,8 @@ class AdminPesananJasaStatusTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -49,7 +51,7 @@ class AdminPesananJasaStatusTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -57,6 +59,8 @@ class AdminPesananJasaStatusTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -67,7 +71,7 @@ class AdminPesananJasaStatusTest extends TestCase
             $table->timestamp('tanggal_selesai')->nullable();
             $table->text('catatan')->nullable();
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -95,7 +99,7 @@ class AdminPesananJasaStatusTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Hana Lestari');
-        $id = $this->buatPesananJasa($customer, 'PSN-J-100', 120000, ['status_pembayaran' => 'lunas']);
+        $id = $this->buatPesananJasa($customer, 'PSN-J-100', 120000, ['status_pembayaran' => 'paid']);
 
         $this->actingAs($admin)
             ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'jadwalkan', 'jadwal' => '2026-11-20T09:30'])
@@ -113,7 +117,7 @@ class AdminPesananJasaStatusTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Indra Wijaya');
         $id = $this->buatPesananJasa($customer, 'PSN-J-101', 90000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'jadwal_pengerjaan' => '2026-11-18 08:00:00',
         ]);
 
@@ -147,7 +151,7 @@ class AdminPesananJasaStatusTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Kartika Dewi');
-        $id = $this->buatPesananJasa($customer, 'PSN-J-103', 150000, ['status_pembayaran' => 'lunas']);
+        $id = $this->buatPesananJasa($customer, 'PSN-J-103', 150000, ['status_pembayaran' => 'paid']);
 
         $this->actingAs($admin)
             ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'jadwalkan'])
@@ -170,11 +174,11 @@ class AdminPesananJasaStatusTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Lutfi Hakim');
         $dikerjakan = $this->buatPesananJasa($customer, 'PSN-J-104', 70000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dikerjakan',
         ]);
         $selesai = $this->buatPesananJasa($customer, 'PSN-J-105', 70000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'selesai',
         ]);
 
@@ -191,7 +195,7 @@ class AdminPesananJasaStatusTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Maya Sari');
-        $id = $this->buatPesananProduk($customer, 'PSN-P-100', 60000, ['status_pembayaran' => 'lunas']);
+        $id = $this->buatPesananProduk($customer, 'PSN-P-100', 60000, ['status_pembayaran' => 'paid']);
 
         foreach (['jadwalkan', 'mulai_kerja'] as $aksi) {
             $this->actingAs($admin)
@@ -205,7 +209,7 @@ class AdminPesananJasaStatusTest extends TestCase
     public function test_non_admin_cannot_schedule_service_orders(): void
     {
         [$customer] = $this->buatCustomer('Nanda Putra');
-        $id = $this->buatPesananJasa($customer, 'PSN-J-106', 70000, ['status_pembayaran' => 'lunas']);
+        $id = $this->buatPesananJasa($customer, 'PSN-J-106', 70000, ['status_pembayaran' => 'paid']);
 
         $this->actingAs($this->createAccount('Pelanggan', 'customer'))
             ->post(route('admin.pesanan.jasa.aksi', $id), ['aksi' => 'jadwalkan'])
@@ -218,7 +222,7 @@ class AdminPesananJasaStatusTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Oki Pratama');
-        $lunas = $this->buatPesananJasa($customer, 'PSN-J-107', 70000, ['status_pembayaran' => 'lunas']);
+        $lunas = $this->buatPesananJasa($customer, 'PSN-J-107', 70000, ['status_pembayaran' => 'paid']);
         $belum = $this->buatPesananJasa($customer, 'PSN-J-108', 70000);
 
         $this->withoutVite()
@@ -240,8 +244,8 @@ class AdminPesananJasaStatusTest extends TestCase
     {
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Putri Ayu');
-        $this->buatPesananJasa($customer, 'PSN-J-109', 70000, ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dijadwalkan']);
-        $this->buatPesananJasa($customer, 'PSN-J-110', 70000, ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dikerjakan']);
+        $this->buatPesananJasa($customer, 'PSN-J-109', 70000, ['status_pembayaran' => 'paid', 'status_pesanan' => 'dijadwalkan']);
+        $this->buatPesananJasa($customer, 'PSN-J-110', 70000, ['status_pembayaran' => 'paid', 'status_pesanan' => 'dikerjakan']);
 
         $this->withoutVite()
             ->actingAs($admin)

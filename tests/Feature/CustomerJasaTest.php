@@ -6,10 +6,8 @@ use App\Models\Akun;
 use App\Models\Jasa;
 use App\Models\PesananJasa;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CustomerJasaTest extends TestCase
@@ -53,18 +51,18 @@ class CustomerJasaTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode', 20)->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->foreignId('customer_id')->constrained('customer')->cascadeOnDelete();
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
             $table->decimal('total_bayar', 12, 0);
-            $table->string('metode_pembayaran', 10);
-            $table->string('status_pembayaran', 20)->default('menunggu_bayar');
+            $table->string('status_pembayaran', 20)->default('unpaid');
             $table->string('status_pesanan', 20)->default('menunggu_konfirmasi');
             $table->text('alamat_lokasi');
             $table->datetime('jadwal_pengerjaan')->nullable();
             $table->datetime('tanggal_selesai')->nullable();
             $table->text('catatan')->nullable();
-            $table->string('bukti_bayar')->nullable();
             $table->date('tanggal_bayar')->nullable();
         });
 
@@ -114,7 +112,6 @@ class CustomerJasaTest extends TestCase
             'kode'              => 'JSA-' . uniqid(),
             'customer_id'       => $pemilik->customer->id,
             'tanggal_pesan'     => now()->toDateString(),
-            'metode_pembayaran' => 'transfer',
             'alamat_lokasi'     => 'Jl. Kenanga No. 7, Jakarta',
         ]);
         $pesanan->total_bayar = 150000;
@@ -155,24 +152,23 @@ class CustomerJasaTest extends TestCase
         $customer = $this->createAccount('Bu Sinta', 'customer');
         $jasa     = $this->buatJasa();
 
-        $this->withoutVite()
-            ->actingAs($customer)
+        $this->actingAs($customer)
             ->post(route('jasa.pesan', $jasa), [
                 'qty'               => 3,
                 'jadwal'            => '2030-01-05T10:00:00',
                 'alamat_lokasi'     => 'Jl. Melati No. 12, Depok',
                 'catatan'           => 'Pangkas pendek, tanah kering.',
-                'metode_pembayaran' => 'transfer',
             ])
-            ->assertRedirectContains('pesanan-jasa/');
+            ->assertRedirectContains('pembayaran/');
 
         $pesanan = PesananJasa::query()->firstOrFail();
         $this->assertSame('Jl. Melati No. 12, Depok', $pesanan->alamat_lokasi);
-        $this->assertSame('transfer', $pesanan->metode_pembayaran);
         $this->assertSame(450000, (int) $pesanan->total_bayar);
-        $this->assertSame('menunggu_bayar', $pesanan->status_pembayaran);
-        $this->assertSame('menunggu_konfirmasi', $pesanan->status_pesanan);
+        $this->assertSame('unpaid', $pesanan->status_pembayaran);
+        $this->assertSame('menunggu_pembayaran', $pesanan->status_pesanan);
         $this->assertSame($customer->customer->id, $pesanan->customer_id);
+        $this->assertMatchesRegularExpression('/^INV-\d{8}-[A-Z0-9]{4,}$/', $pesanan->invoice_number);
+        $this->assertNotNull($pesanan->snap_token);
 
         $this->assertDatabaseHas('detail_pesanan_jasa', [
             'pesanan_jasa_id' => $pesanan->id,
@@ -183,15 +179,14 @@ class CustomerJasaTest extends TestCase
         ]);
     }
 
-    public function test_pemesanan_gagal_tanpa_jadwal_dan_metode_tidak_valid(): void
+    public function test_pemesanan_gagal_tanpa_jadwal_dengan_qty_tidak_valid(): void
     {
         $this->actingAs($this->createAccount('Bu Sinta', 'customer'))
             ->post(route('jasa.pesan', $this->buatJasa()), [
-                'qty'               => 1,
-                'alamat_lokasi'     => 'Jl. Melati No. 12, Depok',
-                'metode_pembayaran' => 'gratis',
+                'qty'           => 99,
+                'alamat_lokasi' => 'Jl. Melati No. 12, Depok',
             ])
-            ->assertSessionHasErrors(['jadwal', 'metode_pembayaran']);
+            ->assertSessionHasErrors(['jadwal', 'qty']);
 
         $this->assertDatabaseCount('pesanan_jasa', 0);
     }
@@ -207,41 +202,72 @@ class CustomerJasaTest extends TestCase
             ->assertSee($pesanan->kode);
     }
 
-    public function test_pemilik_dapat_unggah_bukti_pembayaran_jasa(): void
+    public function test_pemilik_dapat_bayar_ulang_dengan_token_baru(): void
     {
-        Storage::fake();
         $customer = $this->createAccount('Bu Sinta', 'customer');
-        $pesanan  = $this->buatPesanan($customer);
+        $pesanan  = $this->buatPesanan($customer, [
+            'invoice_number' => 'INV-20261118-TEST',
+            'snap_token'     => 'token-lama',
+            'status_pembayaran' => 'failed',
+        ]);
 
         $this->actingAs($customer)
-            ->post(route('pesanan-jasa.bukti.simpan', $pesanan), [
-                'bukti_bayar' => UploadedFile::fake()->image('bukti.jpg'),
-            ])
-            ->assertRedirect()
+            ->post(route('payment.retry', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]))
+            ->assertRedirect(route('payment.show', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]))
             ->assertSessionHas('status');
 
         $pesanan->refresh();
-        $this->assertNotNull($pesanan->bukti_bayar);
-        $this->assertSame('menunggu_verifikasi', $pesanan->status_pembayaran);
-        $this->assertNotNull($pesanan->tanggal_bayar);
-        Storage::disk()->assertExists($pesanan->bukti_bayar);
+        $this->assertSame('unpaid', $pesanan->status_pembayaran);
+        $this->assertNotNull($pesanan->snap_token);
+        $this->assertNotSame('token-lama', $pesanan->snap_token);
+
+        // Tetap satu record pesanan, invoice tidak berubah
+        $this->assertDatabaseCount('pesanan_jasa', 1);
+        $this->assertSame('INV-20261118-TEST', $pesanan->invoice_number);
     }
 
-    public function test_customer_lain_tidak_bisa_unggah_bukti_pemilik_lain(): void
+    public function test_customer_lain_tidak_bisa_bayar_ulang_pesanan_orang_lain(): void
     {
-        Storage::fake();
         $pemilik  = $this->createAccount('Bu Sinta', 'customer');
-        $pesanan  = $this->buatPesanan($pemilik);
+        $pesanan  = $this->buatPesanan($pemilik, ['snap_token' => 'token-lama']);
         $penyusup = $this->createAccount('Bu Lain', 'customer', 'bu.lain@contoh.test');
 
         $this->actingAs($penyusup)
-            ->post(route('pesanan-jasa.bukti.simpan', $pesanan), [
-                'bukti_bayar' => UploadedFile::fake()->image('bukti.jpg'),
-            ])
+            ->post(route('payment.retry', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]))
             ->assertForbidden();
 
         $pesanan->refresh();
-        $this->assertNull($pesanan->bukti_bayar);
-        $this->assertSame('menunggu_bayar', $pesanan->status_pembayaran);
+        $this->assertSame('token-lama', $pesanan->snap_token);
+        $this->assertSame('unpaid', $pesanan->status_pembayaran);
+    }
+
+    public function test_pembayaran_sukses_menandai_pesanan_jasa_lunas(): void
+    {
+        $customer = $this->createAccount('Bu Sinta', 'customer');
+        $pesanan  = $this->buatPesanan($customer, [
+            'invoice_number' => 'INV-20261118-SOKS',
+            'snap_token'     => 'snap-token-test-abc',
+            'status_pesanan' => 'menunggu_pembayaran',
+        ]);
+
+        $this->actingAs($customer)
+            ->get(route('payment.success', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]))
+            ->assertRedirect(route('pesanan-jasa.show', $pesanan->id))
+            ->assertSessionHas('status');
+
+        $pesanan->refresh();
+        $this->assertSame('paid', $pesanan->status_pembayaran);
+        $this->assertNotNull($pesanan->tanggal_bayar);
+    }
+
+    public function test_halaman_pembayaran_hanya_untuk_pemilik_pesanan(): void
+    {
+        $pemilik  = $this->createAccount('Bu Sinta', 'customer');
+        $pesanan  = $this->buatPesanan($pemilik, ['snap_token' => 'token-abc']);
+        $penyusup = $this->createAccount('Bu Lain', 'customer', 'bu.lain@contoh.test');
+
+        $this->actingAs($penyusup)
+            ->get(route('payment.show', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]))
+            ->assertForbidden();
     }
 }

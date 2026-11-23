@@ -54,22 +54,8 @@
 
             <x-textarea nama="catatan" label="Catatan (opsional)" :baris="2">{{ old('catatan') }}</x-textarea>
 
-            <div>
-                <span class="mb-2 block text-sm font-medium">Metode pembayaran</span>
-                <div class="space-y-2" role="radiogroup" aria-label="Metode pembayaran">
-                    @foreach (config('toko.metode') as $kode => $nama)
-                        <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm hover:bg-gray-50 has-[:checked]:border-brand-600 has-[:checked]:bg-brand-50">
-                            <input type="radio" name="metode_pembayaran" value="{{ $kode }}" class="accent-brand-700"
-                                   @checked(old('metode_pembayaran', 'transfer') === $kode) required>
-                            <span>{{ $nama }}</span>
-                        </label>
-                    @endforeach
-                </div>
-                @error('metode_pembayaran') <p class="mt-2 text-sm text-red-700">{{ $message }}</p> @enderror
-            </div>
-
             <x-button class="w-full py-3">Pesan Sekarang</x-button>
-            <p class="text-center text-xs text-gray-500">Pembayaran dikonfirmasi manual oleh admin setelah bukti diunggah.</p>
+            <p class="text-center text-xs text-gray-500">Pembayaran via Midtrans (QRIS, e-wallet, transfer, kartu) terbuka setelah pesanan dibuat.</p>
         </form>
     </section>
 </div>

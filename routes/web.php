@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\KeranjangController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\PesananJasaController;
 use App\Http\Controllers\ProdukController;
@@ -53,9 +54,8 @@ Route::get('/admin/kategori/{kategori}/edit', [AdminKategoriController::class, '
 Route::put('/admin/kategori/{kategori}', [AdminKategoriController::class, 'update'])->middleware(['auth', 'role:admin'])->name('admin.kategori.update');
 Route::delete('/admin/kategori/{kategori}', [AdminKategoriController::class, 'destroy'])->middleware(['auth', 'role:admin'])->name('admin.kategori.destroy');
 
-// Kelola pesanan (admin): produk & jasa
+// Kelola pesanan (admin): produk & jasa — pembayaran diverifikasi Midtrans, admin fokus pengiriman/pengerjaan
 Route::get('/admin/pesanan', [AdminPesananController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.index');
-Route::get('/admin/pesanan/bukti/{tipe}/{id}', [AdminPesananController::class, 'bukti'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.bukti');
 Route::get('/admin/pesanan/produk/{pesanan}', [AdminPesananController::class, 'showProduk'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.produk.show');
 Route::get('/admin/pesanan/jasa/{pesanan}', [AdminPesananController::class, 'showJasa'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.jasa.show');
 Route::post('/admin/pesanan/produk/{pesanan}/aksi', [AdminPesananController::class, 'aksiProduk'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.produk.aksi');
@@ -113,19 +113,21 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/jasa/{jasa}', [JasaController::class, 'pesan'])->name('jasa.pesan')->middleware('throttle:10,1');
 
+    // Midtrans Snap: popup pembayaran, callback sukses, dan bayar ulang.
+    // {tipe} = produk|jasa. {pesanan} = id record pesanan.
+    Route::get('/pembayaran/{tipe}/{pesanan}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::get('/pembayaran/{tipe}/{pesanan}/sukses', [PaymentController::class, 'success'])
+        ->name('payment.success');
+    Route::post('/pembayaran/{tipe}/{pesanan}/bayar-ulang', [PaymentController::class, 'retry'])
+        ->name('payment.retry')->middleware('throttle:10,1');
+
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan.index');
     Route::get('/pesanan/{pesanan}', [PesananController::class, 'show'])->name('pesanan.show');
-    Route::get('/pesanan/{pesanan}/bukti', [PesananController::class, 'bukti'])->name('pesanan.bukti');
-    Route::post('/pesanan/{pesanan}/bukti', [PesananController::class, 'uploadBukti'])
-        ->name('pesanan.bukti.simpan')->middleware('throttle:10,1');
     Route::post('/pesanan/{pesanan}/batalkan', [PesananController::class, 'batalkan'])
         ->name('pesanan.batalkan')->middleware('throttle:10,1');
 
     Route::get('/pesanan-jasa', [PesananJasaController::class, 'index'])->name('pesanan-jasa.index');
     Route::get('/pesanan-jasa/{pesanan}', [PesananJasaController::class, 'show'])->name('pesanan-jasa.show');
-    Route::get('/pesanan-jasa/{pesanan}/bukti', [PesananJasaController::class, 'bukti'])->name('pesanan-jasa.bukti');
-    Route::post('/pesanan-jasa/{pesanan}/bukti', [PesananJasaController::class, 'uploadBukti'])
-        ->name('pesanan-jasa.bukti.simpan')->middleware('throttle:10,1');
     Route::post('/pesanan-jasa/{pesanan}/batalkan', [PesananJasaController::class, 'batalkan'])
         ->name('pesanan-jasa.batalkan')->middleware('throttle:10,1');
 });

@@ -40,6 +40,8 @@ class CustomerBatalkanPesananTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -49,7 +51,7 @@ class CustomerBatalkanPesananTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -57,6 +59,8 @@ class CustomerBatalkanPesananTest extends TestCase
         Schema::create('pesanan_jasa', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -67,7 +71,7 @@ class CustomerBatalkanPesananTest extends TestCase
             $table->timestamp('tanggal_selesai')->nullable();
             $table->text('catatan')->nullable();
             $table->unsignedInteger('total_bayar')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -132,10 +136,11 @@ class CustomerBatalkanPesananTest extends TestCase
         $this->assertDatabaseHas('pesanan_jasa', ['id' => $id, 'status_pesanan' => 'dibatalkan']);
     }
 
-    public function test_an_unpaid_cod_order_can_be_cancelled(): void
+    public function test_a_failed_payment_order_can_still_be_cancelled(): void
     {
+        // Gagal bayar di Midtrans bukan berarti dana masuk: customer boleh membatalkan.
         [$customer, $akun] = $this->buatCustomer('Citra Lestari');
-        $id = $this->buatPesananProduk($customer, 'PSN-C-003', 60000, ['metode_pembayaran' => 'cod']);
+        $id = $this->buatPesananProduk($customer, 'PSN-C-003', 60000, ['status_pembayaran' => 'failed']);
 
         $this->actingAs($this->akun($akun))
             ->post(route('pesanan.batalkan', $id))
@@ -144,15 +149,15 @@ class CustomerBatalkanPesananTest extends TestCase
         $this->assertDatabaseHas('pesanan_produk', ['id' => $id, 'status_pesanan' => 'dibatalkan']);
     }
 
-    public function test_an_order_cannot_be_cancelled_once_proof_is_uploaded_or_it_is_paid_or_moving(): void
+    public function test_an_order_cannot_be_cancelled_once_it_is_paid_or_moving(): void
     {
         [$customer, $akun] = $this->buatCustomer('Dimas Anggara');
         $pemilik = $this->akun($akun);
 
         $kasus = [
-            ['status_pembayaran' => 'menunggu_verifikasi'],
-            ['status_pembayaran' => 'lunas'],
-            ['status_pembayaran' => 'lunas', 'status_pesanan' => 'dikirim'],
+            ['status_pembayaran' => 'paid'],
+            ['status_pembayaran' => 'paid', 'status_pesanan' => 'dikirim'],
+            ['status_pesanan' => 'dikirim'],
             ['status_pesanan' => 'dibatalkan'],
             ['status_pesanan' => 'selesai'],
         ];
@@ -206,7 +211,7 @@ class CustomerBatalkanPesananTest extends TestCase
         [$customer, $akun] = $this->buatCustomer('Hendra Wijaya');
         $pemilik = $this->akun($akun);
         $bisa = $this->buatPesananProduk($customer, 'PSN-C-400', 60000);
-        $sudahBukti = $this->buatPesananProduk($customer, 'PSN-C-401', 60000, ['status_pembayaran' => 'menunggu_verifikasi']);
+        $sudahLunas = $this->buatPesananProduk($customer, 'PSN-C-401', 60000, ['status_pembayaran' => 'paid']);
         $jasa = $this->buatPesananJasa($customer, 'PSN-C-402', 90000);
 
         $this->withoutVite()->actingAs($pemilik)
@@ -215,7 +220,7 @@ class CustomerBatalkanPesananTest extends TestCase
             ->assertSee('Batalkan Pesanan');
 
         $this->withoutVite()->actingAs($pemilik)
-            ->get(route('pesanan.show', $sudahBukti))
+            ->get(route('pesanan.show', $sudahLunas))
             ->assertOk()
             ->assertDontSee('Batalkan Pesanan');
 
@@ -225,14 +230,19 @@ class CustomerBatalkanPesananTest extends TestCase
             ->assertSee('Batalkan Pesanan');
     }
 
-    public function test_a_cancelled_order_cannot_receive_a_payment_proof(): void
+    public function test_a_cancelled_order_cannot_be_paid_again(): void
     {
         [$customer, $akun] = $this->buatCustomer('Intan Permata');
         $id = $this->buatPesananProduk($customer, 'PSN-C-500', 60000);
         $pemilik = $this->akun($akun);
 
         $this->actingAs($pemilik)->post(route('pesanan.batalkan', $id))->assertSessionHas('status');
-        $this->actingAs($pemilik)->post(route('pesanan.bukti.simpan', $id))->assertForbidden();
+
+        // Bayar ulang pada pesanan yang sudah dibatalkan ditolak
+        $this->actingAs($pemilik)
+            ->post(route('payment.retry', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertRedirect(route('payment.show', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertSessionHas('error', 'Pesanan ini sudah dibatalkan.');
     }
 
     private function akun(int $id): Akun

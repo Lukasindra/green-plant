@@ -13,7 +13,7 @@
         $progres = ['Dibuat', 'Lunas', 'Dikerjakan', 'Selesai'];
         $capai = [
             true,
-            $pesanan->status_pembayaran === 'lunas',
+            $pesanan->status_pembayaran === 'paid',
             in_array($pesanan->status_pesanan, ['dikerjakan', 'selesai'], true),
             $pesanan->status_pesanan === 'selesai',
         ];
@@ -48,7 +48,7 @@
             <dt class="text-gray-500">Jadwal</dt><dd>{{ $pesanan->jadwal_pengerjaan?->format('d M Y, H:i') ?? '-' }}</dd>
             <dt class="text-gray-500">Pembayaran</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
             <dt class="text-gray-500">Status</dt><dd><x-status-badge :nilai="$pesanan->status_pesanan" /></dd>
-            <dt class="text-gray-500">Metode</dt><dd>{{ config('toko.metode.' . $pesanan->metode_pembayaran, $pesanan->metode_pembayaran) }}</dd>
+            <dt class="text-gray-500">Invoice</dt><dd>{{ $pesanan->invoice_number ?? $pesanan->kode }}</dd>
             <dt class="text-gray-500">Lokasi</dt><dd>{{ $pesanan->alamat_lokasi }}</dd>
             <dt class="text-gray-500">Catatan</dt><dd>{{ $pesanan->catatan ?: '-' }}</dd>
         </dl>
@@ -69,75 +69,30 @@
         </dl>
     </section>
 
-    {{-- Pembayaran --}}
+    {{-- Pembayaran via Midtrans --}}
     <section class="rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="mb-3 text-sm font-semibold">Pembayaran</h2>
 
-        @if ($pesanan->status_pembayaran === 'lunas')
-            <p class="rounded-md bg-brand-50 px-4 py-3 text-sm text-brand-800">Pembayaran sudah dikonfirmasi. Terima kasih!</p>
+        @if ($pesanan->status_pembayaran === 'paid')
+            <p class="rounded-md bg-brand-50 px-4 py-3 text-sm text-brand-800">Pembayaran dikonfirmasi Midtrans. Terima kasih!</p>
+            <p class="mt-2 text-xs text-gray-500">Metode pembayaran tercatat di jendela Midtrans (QRIS / e-wallet / transfer / kartu).</p>
         @elseif ($pesanan->status_pesanan === 'dibatalkan')
             <p class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">Pesanan ini dibatalkan.</p>
         @else
-            @switch($pesanan->metode_pembayaran)
-                @case('transfer')
-                    <p class="mb-2 text-sm">Transfer sebesar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu rekening:</p>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (\App\Support\Toko::rekening() as $r)
-                            <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $r['bank'] }}</strong> {{ $r['nomor'] }} a.n. {{ $r['nama'] }}</li>
-                        @endforeach
-                    </ul>
-                    @break
+            <p class="mb-3 text-sm text-gray-600">
+                Selesaikan pembayaran sebesar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> melalui jendela Midtrans (QRIS, e-wallet, transfer bank, atau kartu).
+            </p>
 
-                @case('ewallet')
-                    <p class="mb-2 text-sm">Kirim <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong> ke salah satu e-wallet:</p>
-                    <ul class="space-y-1 text-sm">
-                        @foreach (\App\Support\Toko::ewallet() as $e)
-                            <li class="rounded-md bg-gray-50 px-3 py-2"><strong>{{ $e['nama'] }}</strong> {{ $e['nomor'] }}</li>
-                        @endforeach
-                    </ul>
-                    @break
-
-                @case('qris')
-                    <p class="mb-2 text-sm">Scan kode QRIS dan bayar <strong>Rp {{ number_format($pesanan->total_bayar, 0, ',', '.') }}</strong>.</p>
-                    @if (file_exists(public_path(config('toko.qris_gambar'))))
-                        <img src="{{ asset(config('toko.qris_gambar')) }}" alt="QRIS Green Plant" class="mx-auto h-48 w-48 rounded-md border border-gray-200 object-contain" decoding="async">
-                    @else
-                        <p class="rounded-md bg-gray-50 px-3 py-6 text-center text-sm text-gray-500">Kode QRIS belum dipasang.</p>
-                    @endif
-                    @break
-
-                @case('cod')
-                    <p class="rounded-md bg-gray-50 px-4 py-3 text-sm">Bayar tunai saat jasa selesai dikerjakan. Admin akan menghubungi Anda untuk konfirmasi.</p>
-                    @break
-            @endswitch
-
-            @can('uploadBukti', $pesanan)
-                <form method="POST" action="{{ route('pesanan-jasa.bukti.simpan', $pesanan) }}" enctype="multipart/form-data" class="mt-5 border-t border-gray-200 pt-4">
-                    @csrf
-                    <label for="bukti_bayar" class="mb-1 block text-sm font-medium">Unggah bukti pembayaran</label>
-                    <input id="bukti_bayar" type="file" name="bukti_bayar" accept="image/png,image/jpeg" required
-                           class="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-brand-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-brand-800 hover:file:bg-brand-200"
-                           onchange="var p=document.getElementById('pratinjau-bukti'); if (this.files && this.files[0]) { p.src = URL.createObjectURL(this.files[0]); p.classList.remove('hidden'); } else { p.src = ''; p.classList.add('hidden'); }">
-                    <p class="mt-1 text-xs text-gray-500">JPG atau PNG, maksimal 2 MB.</p>
-                    <img id="pratinjau-bukti" src="" alt="Pratinjau bukti pembayaran"
-                         class="mt-2 hidden max-h-48 w-full rounded-lg border border-gray-200 bg-gray-50 object-contain">
-                    @error('bukti_bayar') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
-
-                    <x-button class="mt-3 w-full">Kirim Bukti</x-button>
-                </form>
-            @endcan
-
-            @if ($pesanan->bukti_bayar)
-                <p class="mt-3 text-sm">
-                    <a href="{{ route('pesanan-jasa.bukti', $pesanan) }}" target="_blank" class="font-medium text-brand-700 hover:underline">Lihat bukti yang diunggah</a>
-                </p>
-            @endif
+            <a href="{{ route('payment.show', ['tipe' => 'jasa', 'pesanan' => $pesanan->id]) }}"
+               class="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800">
+                {{ $pesanan->status_pembayaran === 'failed' ? 'Coba Bayar Ulang' : 'Bayar Sekarang' }}
+            </a>
 
             @can('batalkan', $pesanan)
                 <form method="POST" action="{{ route('pesanan-jasa.batalkan', $pesanan) }}" class="mt-5 border-t border-gray-200 pt-4"
                       onsubmit="return confirm('Batalkan pesanan {{ $pesanan->kode }}? Tindakan ini tidak dapat dibatalkan.')">
                     @csrf
-                    <p class="mb-2 text-xs text-gray-500">Belum jadi membayar? Pesanan bisa dibatalkan selama bukti pembayaran belum diunggah.</p>
+                    <p class="mb-2 text-xs text-gray-500">Belum jadi membayar? Pesanan bisa dibatalkan selama pembayaran belum terkonfirmasi Midtrans.</p>
                     <x-button varian="danger" class="w-full">Batalkan Pesanan</x-button>
                 </form>
             @endcan

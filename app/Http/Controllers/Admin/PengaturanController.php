@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pengaturan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
+/**
+ * Pengaturan toko. Pembayaran kini diproses Midtrans Snap, sehingga
+ * yang masih bisa diatur admin hanya ongkir.
+ */
 class PengaturanController extends Controller
 {
-    private const KUNCI = ['ongkir', 'rekening', 'ewallet'];
+    private const KUNCI = ['ongkir'];
 
     public function index(Request $request): View
     {
@@ -26,42 +31,13 @@ class PengaturanController extends Controller
 
         $data = $request->validate([
             'ongkir' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'rekening' => ['nullable', 'array', 'max:5'],
-            'rekening.*.bank' => ['nullable', 'string', 'max:30'],
-            'rekening.*.nomor' => ['nullable', 'string', 'max:40'],
-            'rekening.*.nama' => ['nullable', 'string', 'max:100'],
-            'ewallet' => ['nullable', 'array', 'max:5'],
-            'ewallet.*.nama' => ['nullable', 'string', 'max:30'],
-            'ewallet.*.nomor' => ['nullable', 'string', 'max:40'],
         ], [
             'ongkir.required' => 'Ongkir wajib diisi.',
-            'ongkir.integer' => 'Ongkir harus berupa angka.',
-            'ongkir.min' => 'Ongkir tidak boleh minus.',
+            'ongkir.integer'  => 'Ongkir harus berupa angka.',
+            'ongkir.min'      => 'Ongkir tidak boleh minus.',
         ]);
 
-        $rekening = array_values(array_filter(
-            $data['rekening'] ?? [],
-            fn ($r) => trim($r['bank'] ?? '') !== '' && trim($r['nomor'] ?? '') !== ''
-        ));
-        $ewallet = array_values(array_filter(
-            $data['ewallet'] ?? [],
-            fn ($r) => trim($r['nama'] ?? '') !== '' && trim($r['nomor'] ?? '') !== ''
-        ));
-
-        if ($rekening === [] && $ewallet === []) {
-            return redirect()
-                ->route('admin.pengaturan.index')
-                ->with('error', 'Minimal isi satu rekening atau e-wallet.')
-                ->withInput();
-        }
-
-        foreach ([
-            'ongkir' => $data['ongkir'],
-            'rekening' => $rekening,
-            'ewallet' => $ewallet,
-        ] as $kunci => $nilai) {
-            \App\Models\Pengaturan::updateOrCreate(['kunci' => $kunci], ['nilai' => json_encode($nilai)]);
-        }
+        Pengaturan::updateOrCreate(['kunci' => 'ongkir'], ['nilai' => json_encode($data['ongkir'])]);
 
         return redirect()
             ->route('admin.pengaturan.index')
@@ -72,14 +48,12 @@ class PengaturanController extends Controller
     {
         // Baca dari tabel pengaturan bila ada, fallback ke config/toko.php
         $tersimpan = Schema::hasTable('pengaturan')
-            ? \App\Models\Pengaturan::query()->whereIn('kunci', self::KUNCI)->pluck('nilai', 'kunci')
+            ? Pengaturan::query()->whereIn('kunci', self::KUNCI)->pluck('nilai', 'kunci')
             : collect();
 
         $ongkir = $this->bacaTersimpan($tersimpan, 'ongkir', config('toko.ongkir', 0));
-        $rekening = $this->bacaTersimpan($tersimpan, 'rekening', config('toko.rekening', []));
-        $ewallet = $this->bacaTersimpan($tersimpan, 'ewallet', config('toko.ewallet', []));
 
-        return compact('ongkir', 'rekening', 'ewallet');
+        return compact('ongkir');
     }
 
     private function bacaTersimpan($tersimpan, string $kunci, mixed $bawaan): mixed
@@ -87,7 +61,7 @@ class PengaturanController extends Controller
         if ($tersimpan->has($kunci)) {
             $nilai = json_decode($tersimpan->get($kunci), true);
 
-            return $nilai ?? $bawaan;   // ongkir 0 (gratis) dan daftar kosong tetap sah
+            return $nilai ?? $bawaan;   // ongkir 0 (gratis) tetap sah
         }
 
         return $bawaan;

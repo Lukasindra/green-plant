@@ -39,6 +39,8 @@ class AdminPengirimanTest extends TestCase
         Schema::create('pesanan_produk', function (Blueprint $table): void {
             $table->id();
             $table->string('kode')->unique();
+            $table->string('invoice_number')->nullable()->unique();
+            $table->string('snap_token')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('kurir_id')->nullable();
@@ -50,7 +52,7 @@ class AdminPengirimanTest extends TestCase
             $table->string('alamat_pengiriman');
             $table->unsignedInteger('total_bayar')->default(0);
             $table->unsignedInteger('ongkir')->default(0);
-            $table->string('status_pembayaran')->default('menunggu_bayar');
+            $table->string('status_pembayaran')->default('unpaid');
             $table->string('status_pesanan')->default('diproses');
             $table->string('bukti_bayar')->nullable();
         });
@@ -83,10 +85,10 @@ class AdminPengirimanTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Bayu Aji');
 
-        $this->buatPesananProduk($customer, 'PSN-P-200', 65000, ['status_pembayaran' => 'lunas']);
+        $this->buatPesananProduk($customer, 'PSN-P-200', 65000, ['status_pembayaran' => 'paid']);
         $this->buatPesananProduk($customer, 'PSN-P-201', 45000); // masih menunggu bayar
         $this->buatPesananProduk($customer, 'PSN-P-202', 55000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dikirim',
             'tanggal_kirim' => '2026-10-25',
         ]);
@@ -108,7 +110,7 @@ class AdminPengirimanTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Citra Ayu');
         $kurirId = $this->buatKurir('Rizal', 'Rizal Kurir');
-        $id = $this->buatPesananProduk($customer, 'PSN-P-210', 75000, ['status_pembayaran' => 'lunas']);
+        $id = $this->buatPesananProduk($customer, 'PSN-P-210', 75000, ['status_pembayaran' => 'paid']);
 
         // Kurir terdaftar muncul di dropdown
         $this->actingAs($admin)
@@ -147,7 +149,7 @@ class AdminPengirimanTest extends TestCase
 
         $this->assertDatabaseHas('pesanan_produk', [
             'id' => $id,
-            'status_pembayaran' => 'menunggu_bayar',
+            'status_pembayaran' => 'unpaid',
             'status_pesanan' => 'diproses',
         ]);
     }
@@ -157,7 +159,7 @@ class AdminPengirimanTest extends TestCase
         $admin = $this->createAccount('Admin Green Plant', 'admin');
         [$customer] = $this->buatCustomer('Eka Putri');
         $id = $this->buatPesananProduk($customer, 'PSN-P-212', 60000, [
-            'status_pembayaran' => 'lunas',
+            'status_pembayaran' => 'paid',
             'status_pesanan' => 'dikirim',
             'tanggal_kirim' => '2026-10-25',
         ]);
