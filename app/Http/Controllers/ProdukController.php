@@ -60,7 +60,7 @@ class ProdukController extends Controller
                 ->where('kategori_id', $produk->kategori_id)
                 ->whereKeyNot($produk->id)
                 ->orderByDesc('id')
-                ->limit(4)
+                ->limit(6)
                 ->get(),
         ]);
     }

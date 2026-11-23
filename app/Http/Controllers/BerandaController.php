@@ -21,7 +21,7 @@ class BerandaController extends Controller
         return view('beranda.index', [
             // Katalog terbaru untuk section unggulan beranda
             'produk' => Produk::with('kategori')->orderByDesc('id')->limit(8)->get(),
-            'jasa'   => Jasa::with('kategori')->orderByDesc('id')->limit(4)->get(),
+            'jasa'   => Jasa::with('kategori')->orderByDesc('id')->limit(6)->get(),
         ]);
     }
 }

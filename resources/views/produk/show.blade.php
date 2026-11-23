@@ -45,7 +45,7 @@
 @if ($terkait->isNotEmpty())
     <section class="mt-8">
         <h2 class="mb-4 text-lg font-semibold">Produk Serupa</h2>
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             @foreach ($terkait as $t)
                 <x-produk-card :produk="$t" />
             @endforeach

@@ -26,7 +26,7 @@
         <a href="{{ route('produk.index') }}" class="text-sm font-medium text-brand-700 hover:underline">Lihat semua &rarr;</a>
     </div>
     @if ($produk->count())
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             @foreach ($produk as $p)
                 <x-produk-card :produk="$p" />
             @endforeach
@@ -43,22 +43,9 @@
         <a href="{{ route('jasa.index') }}" class="text-sm font-medium text-brand-700 hover:underline">Lihat semua &rarr;</a>
     </div>
     @if ($jasa->count())
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             @foreach ($jasa as $j)
-                <a href="{{ route('jasa.show', $j) }}"
-                    class="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
-                    <div class="aspect-[4/3] overflow-hidden bg-gray-50">
-                        <x-gambar-jasa :foto="$j->foto" :nama="$j->nama" />
-                    </div>
-                    <div class="flex flex-1 flex-col gap-1 p-4">
-                        <span class="text-xs uppercase tracking-wide text-teal-600">{{ $j->kategori?->nama }}</span>
-                        <span class="font-semibold text-gray-900 group-hover:text-brand-700">{{ $j->nama }}</span>
-                        <span class="mt-auto pt-2 text-sm font-medium text-brand-700">
-                            Rp {{ number_format($j->harga, 0, ',', '.') }}
-                            <span class="text-xs text-gray-400">/ {{ $j->satuan }}</span>
-                        </span>
-                    </div>
-                </a>
+                <x-jasa-card :jasa="$j" />
             @endforeach
         </div>
     @else

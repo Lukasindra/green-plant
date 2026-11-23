@@ -1,6 +1,6 @@
 @props(['produk'])
-<div class="relative flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-    <a href="{{ route('produk.show', $produk) }}" class="block aspect-square bg-gray-50" title="Lihat detail {{ $produk->nama }}">
+<div class="relative flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+    <a href="{{ route('produk.show', $produk) }}" class="block aspect-square overflow-hidden bg-gray-50" title="Lihat detail {{ $produk->nama }}">
         <x-gambar-produk :foto="$produk->foto" :nama="$produk->nama" />
         @if ($produk->stok === 0)
             <span class="absolute left-2 top-2 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">Habis</span>
@@ -9,11 +9,11 @@
         @endif
     </a>
     <div class="flex flex-1 flex-col p-3">
-        <h3 class="text-sm font-semibold text-gray-900">
+        <h3 class="line-clamp-2 text-sm font-semibold leading-snug text-gray-900">
             <a href="{{ route('produk.show', $produk) }}" class="hover:text-brand-700">{{ $produk->nama }}</a>
         </h3>
-        <p class="text-xs text-gray-500">{{ $produk->kategori?->nama }}</p>
-        <p class="mt-2 text-sm font-semibold text-gray-900">Rp {{ number_format($produk->harga, 0, ',', '.') }}</p>
+        <p class="mt-0.5 truncate text-xs text-gray-500">{{ $produk->kategori?->nama }}</p>
+        <p class="mt-auto pt-2 text-sm font-semibold text-gray-900">Rp {{ number_format($produk->harga, 0, ',', '.') }}</p>
 
         @if ($produk->stok > 0)
             <form method="POST" action="{{ route('keranjang.tambah') }}" class="mt-3">
