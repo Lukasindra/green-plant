@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\KeranjangController;
+use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\PesananJasaController;
@@ -28,6 +29,11 @@ Route::get('/produk/{produk}', [ProdukController::class, 'show'])->name('produk.
 Route::get('/jasa', [JasaController::class, 'index'])->name('jasa.index');
 Route::get('/jasa/{jasa}', [JasaController::class, 'show'])->name('jasa.show');
 Route::view('/tentang', 'tentang.index')->name('tentang');
+
+// Webhook Midtrans (tanpa login, CSRF dikecualikan di bootstrap/app.php).
+Route::post('/midtrans/notifikasi', MidtransNotificationController::class)
+    ->name('midtrans.notifikasi')
+    ->middleware('throttle:120,1');
 Route::get('/admin/dashboard', DashboardController::class)->middleware(['auth', 'role:admin'])->name('admin.dashboard');
 
 // Kelola produk (admin)
@@ -118,6 +124,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pembayaran/{tipe}/{pesanan}', [PaymentController::class, 'show'])->name('payment.show');
     Route::get('/pembayaran/{tipe}/{pesanan}/sukses', [PaymentController::class, 'success'])
         ->name('payment.success');
+    Route::get('/pembayaran/{tipe}/{pesanan}/status', [PaymentController::class, 'status'])
+        ->name('payment.status')->middleware('throttle:120,1');
     Route::post('/pembayaran/{tipe}/{pesanan}/bayar-ulang', [PaymentController::class, 'retry'])
         ->name('payment.retry')->middleware('throttle:10,1');
 

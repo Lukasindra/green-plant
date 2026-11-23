@@ -6,6 +6,7 @@ use App\Models\DetailPesananProduk;
 use App\Models\PesananProduk;
 use App\Models\Produk;
 use App\Services\MidtransService;
+use App\Services\PembayaranService;
 use App\Support\Toko;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -132,7 +133,7 @@ class CheckoutController extends Controller
 
         try {
             $orderId = $pesanan->invoice_number;   // order_id awal = invoice_number
-            $pesanan->snap_token = app(MidtransService::class)->snapToken(
+            $token   = app(MidtransService::class)->snapToken(
                 $orderId,
                 (int) $pesanan->total_bayar,
                 MidtransService::itemDetails(
@@ -150,7 +151,9 @@ class CheckoutController extends Controller
                     'no_hp' => Auth::user()->no_hp,
                 ]
             );
-            $pesanan->save();
+
+            // Simpan token + order_id Midtrans (dipakai untuk cek status/webhook).
+            app(PembayaranService::class)->simpanToken($pesanan, $orderId, $token);
         } catch (\Throwable $e) {
             // Pesanan tetap tersimpan (unpaid, token kosong); user bisa memakai "Coba Bayar Ulang".
             report($e);

@@ -6,6 +6,7 @@ use App\Models\Jasa;
 use App\Models\Kategori;
 use App\Models\PesananJasa;
 use App\Services\MidtransService;
+use App\Services\PembayaranService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -109,8 +110,9 @@ class JasaController extends Controller
         });
 
         try {
-            $pesanan->snap_token = app(MidtransService::class)->snapToken(
-                $pesanan->invoice_number,                    // order_id awal = invoice_number
+            $orderId = $pesanan->invoice_number;         // order_id awal = invoice_number
+            $token   = app(MidtransService::class)->snapToken(
+                $orderId,
                 (int) $pesanan->total_bayar,
                 MidtransService::itemDetails([[
                     'id'    => 'jasa-' . $jasa->id,
@@ -124,7 +126,9 @@ class JasaController extends Controller
                     'no_hp' => Auth::user()->no_hp,
                 ]
             );
-            $pesanan->save();
+
+            // Simpan token + order_id Midtrans (dipakai untuk cek status/webhook).
+            app(PembayaranService::class)->simpanToken($pesanan, $orderId, $token);
         } catch (\Throwable $e) {
             // Pesanan tetap tersimpan (unpaid, token kosong); user bisa memakai "Coba Bayar Ulang".
             report($e);

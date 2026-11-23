@@ -4,7 +4,8 @@
 
 @section('isi')
 @php
-    $punyaToken = filled($pesanan->snap_token);
+    $unpaid     = $pesanan->status_pembayaran === 'unpaid';
+    $punyaToken = $unpaid && filled($pesanan->snap_token);
     $clientKey  = config('midtrans.client_key');
     $snapUrl    = config('midtrans.is_production')
         ? 'https://app.midtrans.com/snap/snap.js'
@@ -80,6 +81,8 @@
             </form>
         @endif
 
+        <p id="status-cek" class="mt-3 text-xs text-gray-500" role="status" aria-live="polite"></p>
+
         <p class="mt-5 border-t border-gray-200 pt-4 text-center text-xs text-gray-400">
             Sandbox Midtrans &mdash; gunakan kartu uji atau QRIS sandbox. Tidak ada uang sungguhan yang ditransfer.
         </p>
@@ -97,8 +100,13 @@
                 var tombol     = document.getElementById('tombol-bayar');
                 var pesanTutup = document.getElementById('pesan-tutup');
 
-                function pesanGagal() {
-                    if (pesanTutup) pesanTutup.classList.remove('hidden');
+                function tampilPesan(teks) {
+                    if (! pesanTutup) return;
+                    pesanTutup.textContent = teks;
+                    pesanTutup.classList.remove('hidden');
+                }
+
+                function aktifkanTombol() {
                     if (tombol) tombol.removeAttribute('disabled');
                 }
 
@@ -107,15 +115,25 @@
                     if (tombol) tombol.setAttribute('disabled', 'disabled');
 
                     if (! window.snap) {
-                        pesanGagal();
+                        tampilPesan('Jendela pembayaran Midtrans gagal dimuat. Periksa koneksi lalu coba lagi.');
+                        aktifkanTombol();
                         return;
                     }
 
                     window.snap.pay(token, {
                         onSuccess: function () { window.location.href = keSukses; },
-                        onPending: pesanGagal,
-                        onError:   pesanGagal,
-                        onClose:   pesanGagal
+                        onPending: function () {
+                            tampilPesan('Pembayaran sedang diproses. Status di halaman ini akan diperbarui otomatis.');
+                            aktifkanTombol();
+                        },
+                        onError: function () {
+                            tampilPesan('Pembayaran gagal diproses. Tekan "Coba Bayar Ulang" untuk membuat pembayaran baru.');
+                            aktifkanTombol();
+                        },
+                        onClose: function () {
+                            tampilPesan('Jendela pembayaran ditutup. Jika Anda sudah membayar, status akan diperbarui otomatis di halaman ini.');
+                            aktifkanTombol();
+                        }
                     });
                 }
 
@@ -128,5 +146,68 @@
             MIDTRANS_CLIENT_KEY belum diisi di file <code>.env</code>, jadi jendela pembayaran tidak dapat dibuka.
         </p>
     @endif
+@endif
+
+{{-- Polling status: menangkap pembayaran VA/e-wallet yang selesai setelah popup ditutup --}}
+@if ($pesanan->status_pesanan !== 'dibatalkan')
+    <script>
+        (function () {
+            var urlStatus  = {{ Illuminate\Support\Js::from(route('payment.status', ['tipe' => $tipe, 'pesanan' => $pesanan->id])) }};
+            var urlDetail  = {{ Illuminate\Support\Js::from(route($tipe === 'jasa' ? 'pesanan-jasa.show' : 'pesanan.show', $pesanan->id)) }};
+            var statusAwal = {{ Illuminate\Support\Js::from($pesanan->status_pembayaran) }};
+            var elStatus   = document.getElementById('status-cek');
+            var mulai      = Date.now();
+            var sudahMuatUlang = false;
+
+            function tulis(teks) {
+                if (elStatus) elStatus.textContent = teks;
+            }
+
+            function cekStatus() {
+                // Jangan polling saat tab tidak aktif; berhenti otomatis setelah 30 menit.
+                if (document.hidden || Date.now() - mulai > 30 * 60 * 1000) return;
+
+                fetch(urlStatus, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        if (! data) return;
+
+                        if (data.status === 'paid') {
+                            tulis('Pembayaran diterima. Mengalihkan ke detail pesanan...');
+                            window.location.href = urlDetail;
+                            return;
+                        }
+
+                        if (data.status === 'dibatalkan') {
+                            window.location.reload();
+                            return;
+                        }
+
+                        if (data.status === 'failed') {
+                            tulis('Pembayaran gagal atau kedaluwarsa. Tekan "Coba Bayar Ulang" untuk membuat pembayaran baru.');
+
+                            // Muat ulang sekali supaya tombol bayar ulang tampil.
+                            if (! sudahMuatUlang && statusAwal !== 'failed') {
+                                sudahMuatUlang = true;
+                                window.location.reload();
+                            }
+                            return;
+                        }
+
+                        tulis('Menunggu pembayaran... status diperbarui otomatis.');
+                    })
+                    .catch(function () { /* gangguan jaringan sesaat: dicoba lagi pada interval berikutnya */ });
+            }
+
+            setInterval(cekStatus, 7000);
+            document.addEventListener('visibilitychange', function () {
+                if (! document.hidden) cekStatus();
+            });
+            cekStatus();
+        })();
+    </script>
 @endif
 @endsection

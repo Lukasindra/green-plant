@@ -16,4 +16,8 @@ return [
 
     // Masa berlaku Snap token (jam). Setelah lewat, user memakai "Coba Bayar Ulang".
     'kedaluwarsa_jam' => 24,
+
+    // URL webhook publik untuk menguji notifikasi (mis. https://xxxx.ngrok-free.app/midtrans/notifikasi).
+    // Kosongkan bila memakai URL notifikasi dari dashboard Midtrans.
+    'notification_url' => env('MIDTRANS_NOTIFICATION_URL'),
 ];

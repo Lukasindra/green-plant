@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\PastikanPeran::class,
         ]);
+
+        // Webhook Midtrans dipanggil server, bukan browser: tidak ada token CSRF.
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/notifikasi',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

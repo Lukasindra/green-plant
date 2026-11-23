@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
-use App\Models\Produk;
 use App\Services\MidtransService;
+use App\Services\PembayaranService;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 /**
@@ -19,9 +18,13 @@ use Illuminate\View\View;
  *
  * Alur:
  *  - show    : halaman pembayaran yang membuka popup Snap memakai snap_token tersimpan.
- *  - success : callback dari popup (onSuccess) -> tandai pesanan paid (+ stok berkurang).
+ *  - success : callback onSuccess Snap -> verifikasi ke API Midtrans lalu tandai paid.
+ *  - status  : polling JSON untuk pembayaran yang selesai belakangan (VA/e-wallet).
  *  - retry   : "Coba Bayar Ulang" -> token BARU dengan order_id invoice_number.'-'.time(),
  *              tetap satu record order (invoice_number tidak berubah).
+ *
+ * Perubahan status sebenarnya ditangani PembayaranService supaya callback,
+ * webhook, dan polling memakai aturan yang sama.
  */
 class PaymentController extends Controller
 {
@@ -29,6 +32,10 @@ class PaymentController extends Controller
         'produk' => PesananProduk::class,
         'jasa'   => PesananJasa::class,
     ];
+
+    public function __construct(private PembayaranService $pembayaran)
+    {
+    }
 
     // ---------------------------------------------------------------- show
 
@@ -55,7 +62,7 @@ class PaymentController extends Controller
         $pesanan = $this->temukan($tipe, $pesanan);
         $this->otorisasi($request, $pesanan);
 
-        if ($this->dibatalkan($pesanan)) {
+        if ($this->pembayaran->dibatalkan($pesanan)) {
             return $this->keSukses($tipe, $pesanan)
                 ->with('error', 'Pesanan ini sudah dibatalkan, jadi pembayaran tidak dapat dikonfirmasi.');
         }
@@ -66,15 +73,52 @@ class PaymentController extends Controller
                 ->with('info', 'Pesanan ini sudah lunas.');
         }
 
-        $peringatan = $this->tandaiLunas($pesanan, $tipe);
+        $hasil = $this->pembayaran->sinkronkan($pesanan, $tipe);
 
-        if ($peringatan) {
+        if ($hasil['status'] === 'failed') {
+            return $this->keSukses($tipe, $pesanan)
+                ->with('error', 'Pembayaran gagal atau kedaluwarsa. Buka halaman pembayaran dan tekan "Coba Bayar Ulang".');
+        }
+
+        if ($hasil['status'] === 'dibatalkan') {
+            return $this->keSukses($tipe, $pesanan)
+                ->with('error', 'Pesanan ini sudah dibatalkan, jadi pembayaran tidak dapat dikonfirmasi.');
+        }
+
+        if ($hasil['status'] !== 'paid') {
+            // Callback onSuccess Snap tetap menjadi bukti utama bila verifikasi API
+            // belum tersedia (gangguan jaringan / status Midtrans belum berubah).
+            $hasil = [
+                'status'     => 'paid',
+                'peringatan' => $this->pembayaran->tandaiLunas($pesanan, $tipe),
+            ];
+        }
+
+        if (filled($hasil['peringatan'] ?? null)) {
             // Pembayaran sudah diterima Midtrans; hanya stok yang tidak bisa dipotong penuh.
-            return $this->keSukses($tipe, $pesanan)->with('peringatan', $peringatan);
+            return $this->keSukses($tipe, $pesanan)->with('peringatan', $hasil['peringatan']);
         }
 
         return $this->keSukses($tipe, $pesanan)
             ->with('status', 'Pembayaran berhasil dikonfirmasi Midtrans. Pesanan Anda lunas!');
+    }
+
+    // -------------------------------------------------------------- status
+
+    /**
+     * Polling dari payment.blade.php. Dipakai untuk pembayaran yang selesai
+     * belakangan (VA/e-wallet) tanpa harus menutup halaman.
+     */
+    public function status(Request $request, string $tipe, int $pesanan): JsonResponse
+    {
+        $pesanan = $this->temukan($tipe, $pesanan);
+        $this->otorisasi($request, $pesanan);
+
+        if ($pesanan->sudahLunas()) {
+            return response()->json(['status' => 'paid', 'peringatan' => null]);
+        }
+
+        return response()->json($this->pembayaran->sinkronkan($pesanan, $tipe));
     }
 
     // --------------------------------------------------------------- retry
@@ -89,7 +133,7 @@ class PaymentController extends Controller
             return $this->keShow($tipe, $pesanan)->with('info', 'Pesanan ini sudah lunas.');
         }
 
-        if ($this->dibatalkan($pesanan)) {
+        if ($this->pembayaran->dibatalkan($pesanan)) {
             return $this->keShow($tipe, $pesanan)->with('error', 'Pesanan ini sudah dibatalkan.');
         }
 
@@ -103,80 +147,13 @@ class PaymentController extends Controller
                 ->with('error', $this->pesanError($e));
         }
 
-        $pesanan->snap_token        = $token;                // timpa token lama
-        $pesanan->status_pembayaran = $pesanan::STATUS_UNPAID;
-        $pesanan->save();
+        $this->pembayaran->simpanToken($pesanan, $orderIdBaru, $token);
 
         return $this->keShow($tipe, $pesanan)
             ->with('status', 'Token pembayaran baru berhasil dibuat. Lanjutkan pembayaran.');
     }
 
     // ------------------------------------------------------------ internals
-
-    private function tandaiLunas($pesanan, string $tipe): ?string
-    {
-        $peringatan = null;
-
-        DB::transaction(function () use ($pesanan, $tipe, &$peringatan): void {
-            $tabel = $pesanan->getTable();
-
-            // Kunci baris pesanan: dua callback onSuccess yang berjalan bersamaan
-            // tidak boleh sama-sama menandai lunas lalu memotong stok dua kali.
-            $segar = $pesanan->newQuery()->whereKey($pesanan->getKey())->lockForUpdate()->first();
-
-            if (! $segar || $segar->sudahLunas()) {
-                return;
-            }
-
-            $segar->status_pembayaran = $segar::STATUS_PAID;
-
-            if (Schema::hasColumn($tabel, 'tanggal_bayar')) {
-                $segar->tanggal_bayar = now()->toDateString();
-            }
-
-            // Pesanan produk yang baru lunas dipindah ke antrean "siap kirim" admin.
-            if ($tipe === 'produk'
-                && Schema::hasColumn($tabel, 'status_pesanan')
-                && in_array($segar->status_pesanan, ['menunggu_pembayaran', 'diproses'], true)) {
-                $segar->status_pesanan = 'dibayar';
-            }
-
-            $segar->save();
-
-            // Stok produk berkurang saat pembayaran terkonfirmasi Midtrans (bukan saat checkout).
-            if ($tipe === 'produk' && Schema::hasTable('produk')) {
-                try {
-                    $this->kurangiStok($segar);
-                } catch (\RuntimeException $e) {
-                    // Uang sudah masuk lewat Snap: pesanan tetap lunas, admin diberi tahu lewat log.
-                    Log::error('Stok tidak cukup untuk pesanan ' . $segar->invoice_number . ': ' . $e->getMessage());
-                    $peringatan = $e->getMessage();
-                }
-            }
-        });
-
-        return $peringatan;
-    }
-
-    /** Potong stok dengan kunci baris agar dua callback bersamaan tidak sama-sama lolos. */
-    private function kurangiStok(PesananProduk $pesanan): void
-    {
-        foreach ($pesanan->detail()->get() as $detail) {
-            if (! $detail->produk_id) {
-                continue;
-            }
-
-            $produk = Produk::lockForUpdate()->find($detail->produk_id);
-
-            if (! $produk || $produk->stok < $detail->qty) {
-                throw new \RuntimeException(
-                    'Stok ' . ($produk?->nama ?? 'produk') . ' tidak mencukupi. Admin akan menyesuaikan pesanan ini.'
-                );
-            }
-
-            $produk->decrement('stok', $detail->qty);
-        }
-    }
 
     /** Invoice dasar untuk order_id Midtrans; invoice lama diisi otomatis bila kosong. */
     private function invoiceUntukMidtrans($pesanan): string
@@ -191,7 +168,7 @@ class PaymentController extends Controller
 
     private function mintaToken(string $tipe, $pesanan, string $orderId): string
     {
-        $akun   = auth()->user();
+        $akun    = auth()->user();
         $layanan = app(MidtransService::class);
 
         if ($tipe === 'jasa') {
@@ -240,13 +217,6 @@ class PaymentController extends Controller
         } catch (QueryException) {
             abort(404);   // tabel belum ada (mis. katalog kosong)
         }
-    }
-
-    /** Pesanan yang sudah dibatalkan tidak boleh dibayar / dikonfirmasi lunas. */
-    private function dibatalkan($pesanan): bool
-    {
-        return Schema::hasColumn($pesanan->getTable(), 'status_pesanan')
-            && $pesanan->status_pesanan === 'dibatalkan';
     }
 
     /** Pesan error yang aman ditampilkan: detail SDK hanya untuk RuntimeException milik kita. */

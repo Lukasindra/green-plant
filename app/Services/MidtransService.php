@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Str;
 use Midtrans\Config;
 use Midtrans\Snap;
+use Midtrans\Transaction;
 
 /**
  * Pembungkus SDK midtrans/midtrans-php untuk kebutuhan Snap.
@@ -21,6 +22,11 @@ class MidtransService
         Config::$isProduction = config('midtrans.is_production', false);
         Config::$isSanitized  = config('midtrans.is_sanitized', true);
         Config::$is3ds        = config('midtrans.is_3ds', true);
+
+        // Dipakai saat menguji webhook lewat tunnel (mis. ngrok). Kosong = ikuti setelan dashboard.
+        if (filled(config('midtrans.notification_url'))) {
+            Config::$overrideNotifUrl = config('midtrans.notification_url');
+        }
     }
 
     /**
@@ -122,5 +128,64 @@ class MidtransService
         }
 
         return $item;
+    }
+
+    /**
+     * Ambil status transaksi terakhir dari Midtrans.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws \RuntimeException bila kredensial kosong / API tidak dapat dihubungi
+     */
+    public function status(string $orderId): array
+    {
+        // Lingkungan test tidak memanggil jaringan; anggap transaksi berhasil.
+        if (app()->runningUnitTests()) {
+            return [
+                'status_code'        => '200',
+                'order_id'           => $orderId,
+                'transaction_status' => 'settlement',
+                'fraud_status'       => 'accept',
+            ];
+        }
+
+        if (! config('midtrans.server_key')) {
+            throw new \RuntimeException('Kredensial Midtrans belum diisi. Lengkapi MIDTRANS_SERVER_KEY di file .env.');
+        }
+
+        $this->konfigurasi();
+
+        try {
+            return (array) Transaction::status($orderId);
+        } catch (\Throwable $e) {
+            // 404 = transaksi belum pernah dibuat (Snap token belum dipakai).
+            if ((int) $e->getCode() === 404) {
+                return ['order_id' => $orderId, 'transaction_status' => 'belum_ada'];
+            }
+
+            throw new \RuntimeException('Gagal memeriksa status transaksi ke Midtrans: ' . $e->getMessage(), 0, $e);
+        }
+    }
+
+    /**
+     * Verifikasi signature notifikasi Midtrans.
+     * signature_key = sha512(order_id + status_code + gross_amount + server_key)
+     */
+    public function signatureSah(array $payload): bool
+    {
+        $serverKey = (string) config('midtrans.server_key');
+        $signature = (string) ($payload['signature_key'] ?? '');
+
+        if ($serverKey === '' || $signature === '') {
+            return false;
+        }
+
+        if (! isset($payload['order_id'], $payload['status_code'], $payload['gross_amount'])) {
+            return false;
+        }
+
+        $dasar = $payload['order_id'] . $payload['status_code'] . $payload['gross_amount'] . $serverKey;
+
+        return hash_equals(hash('sha512', $dasar), $signature);
     }
 }

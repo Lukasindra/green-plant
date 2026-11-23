@@ -55,6 +55,9 @@ class CheckoutMidtransTest extends TestCase
             $table->string('kode')->unique();
             $table->string('invoice_number')->nullable()->unique();
             $table->string('snap_token')->nullable();
+            $table->string('midtrans_order_id')->nullable();
+            $table->string('midtrans_transaction_id')->nullable();
+            $table->string('midtrans_payment_type')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('kurir_id')->nullable();
@@ -102,6 +105,7 @@ class CheckoutMidtransTest extends TestCase
         $this->assertMatchesRegularExpression('/^INV-\d{8}-[A-Z0-9]{4,}$/', $pesanan->invoice_number);
         $this->assertNotNull($pesanan->snap_token);
         $this->assertStringStartsWith('snap-token-test-', $pesanan->snap_token);
+        $this->assertSame($pesanan->invoice_number, $pesanan->midtrans_order_id);
 
         // Keranjang dikosongkan setelah checkout
         $this->assertNull(session('cart'));
@@ -156,6 +160,7 @@ class CheckoutMidtransTest extends TestCase
         $this->assertSame('unpaid', $pesanan->status_pembayaran);
         $this->assertSame('INV-20261118-DG01', $pesanan->invoice_number);
         $this->assertNotSame('snap-token-lama', $pesanan->snap_token);
+        $this->assertStringStartsWith('INV-20261118-DG01-', (string) $pesanan->midtrans_order_id);
 
         // Jangan buat baris order baru
         $this->assertDatabaseCount('pesanan_produk', 1);
@@ -250,6 +255,191 @@ class CheckoutMidtransTest extends TestCase
         $this->assertSame('unpaid', $pesanan->status_pembayaran);
         $this->assertSame('dibatalkan', $pesanan->status_pesanan);
         $this->assertNull($pesanan->tanggal_bayar);
+    }
+
+    public function test_payment_status_polling_marks_order_paid_and_decrements_stock(): void
+    {
+        [$customer, $akun] = $this->buatCustomer('Hana Lestari');
+        $produk = DB::table('produk')->insertGetId([
+            'nama'  => 'Lidah Mertua',
+            'harga' => 60000,
+            'stok'  => 4,
+        ]);
+
+        $id = $this->buatPesananProduk($customer, 'PSN-P-906', 75000, [
+            'invoice_number'    => 'INV-20261123-HL01',
+            'midtrans_order_id' => 'INV-20261123-HL01',
+            'snap_token'        => 'snap-token-test-906',
+        ]);
+
+        DB::table('detail_pesanan_produk')->insert([
+            'pesanan_produk_id' => $id,
+            'produk_id'         => $produk,
+            'qty'               => 1,
+            'harga'             => 60000,
+            'subtotal'          => 60000,
+        ]);
+
+        $this->actingAs($akun)
+            ->getJson(route('payment.status', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertOk()
+            ->assertJson(['status' => 'paid']);
+
+        $this->assertSame('paid', PesananProduk::findOrFail($id)->status_pembayaran);
+        $this->assertSame(3, (int) DB::table('produk')->where('id', $produk)->value('stok'));
+    }
+
+    public function test_payment_status_polling_is_forbidden_for_other_users(): void
+    {
+        [$customer] = $this->buatCustomer('Pemilik Polling');
+        [, $penyusup] = $this->buatCustomer('Penyusup Polling');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-907', 50000);
+
+        $this->actingAs($penyusup)
+            ->getJson(route('payment.status', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertForbidden();
+    }
+
+    public function test_midtrans_webhook_with_valid_signature_marks_order_paid_and_is_idempotent(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Indra Wijaya');
+        $produk = DB::table('produk')->insertGetId([
+            'nama'  => 'Calathea',
+            'harga' => 45000,
+            'stok'  => 6,
+        ]);
+
+        $id = $this->buatPesananProduk($customer, 'PSN-P-908', 50000, [
+            'invoice_number'    => 'INV-20261123-IW01',
+            'midtrans_order_id' => 'INV-20261123-IW01',
+            'snap_token'        => 'snap-token-test-908',
+        ]);
+
+        DB::table('detail_pesanan_produk')->insert([
+            'pesanan_produk_id' => $id,
+            'produk_id'         => $produk,
+            'qty'               => 1,
+            'harga'             => 45000,
+            'subtotal'          => 45000,
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-IW01', '50000.00', 'settlement', [
+            'transaction_id' => 'trx-abc-1',
+            'payment_type'   => 'qris',
+        ]);
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $pesanan = PesananProduk::findOrFail($id);
+        $this->assertSame('paid', $pesanan->status_pembayaran);
+        $this->assertSame('trx-abc-1', $pesanan->midtrans_transaction_id);
+        $this->assertSame('qris', $pesanan->midtrans_payment_type);
+        $this->assertSame(5, (int) DB::table('produk')->where('id', $produk)->value('stok'));
+
+        // Notifikasi yang sama dikirim ulang tidak boleh memotong stok lagi.
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+        $this->assertSame(5, (int) DB::table('produk')->where('id', $produk)->value('stok'));
+    }
+
+    public function test_midtrans_webhook_rejects_invalid_signature(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Jaka Saputra');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-909', 50000, [
+            'invoice_number'    => 'INV-20261123-JS01',
+            'midtrans_order_id' => 'INV-20261123-JS01',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-JS01', '50000.00', 'settlement');
+        $payload['signature_key'] = str_repeat('a', 128);
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertForbidden();
+
+        $this->assertSame('unpaid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    public function test_midtrans_webhook_marks_expired_transaction_as_failed(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Kurnia Sari');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-910', 50000, [
+            'invoice_number'    => 'INV-20261123-KS01',
+            'midtrans_order_id' => 'INV-20261123-KS01',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-KS01', '50000.00', 'expire');
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $pesanan = PesananProduk::findOrFail($id);
+        $this->assertSame('failed', $pesanan->status_pembayaran);
+        $this->assertSame('menunggu_pembayaran', $pesanan->status_pesanan);
+    }
+
+    public function test_midtrans_webhook_ignores_unknown_order(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        $payload = $this->payloadNotifikasi('INV-TIDAK-ADA', '10000.00', 'settlement');
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)
+            ->assertOk()
+            ->assertJson(['message' => 'Pesanan tidak ditemukan.']);
+    }
+
+    public function test_midtrans_webhook_ignores_stale_transaction_after_retry(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Lukman Hakim');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-911', 50000, [
+            'invoice_number'    => 'INV-20261123-LH01',
+            'midtrans_order_id' => 'INV-20261123-LH01-1700000000',
+        ]);
+
+        // Notifikasi dari transaksi lama (order_id awal) tidak boleh menimpa transaksi aktif.
+        $payload = $this->payloadNotifikasi('INV-20261123-LH01', '50000.00', 'settlement');
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $this->assertSame('unpaid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    public function test_midtrans_webhook_rejects_mismatched_gross_amount(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Maya Anggita');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-912', 50000, [
+            'invoice_number'    => 'INV-20261123-MA01',
+            'midtrans_order_id' => 'INV-20261123-MA01',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-MA01', '999.00', 'settlement');
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertStatus(400);
+
+        $this->assertSame('unpaid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    private function payloadNotifikasi(string $orderId, string $gross, string $status, array $tambahan = []): array
+    {
+        $statusCode = '200';
+
+        return array_merge([
+            'order_id'           => $orderId,
+            'status_code'        => $statusCode,
+            'gross_amount'       => $gross,
+            'transaction_status' => $status,
+            'fraud_status'       => 'accept',
+            'transaction_id'     => 'trx-' . uniqid(),
+            'payment_type'       => 'qris',
+            'signature_key'      => hash('sha512', $orderId . $statusCode . $gross . config('midtrans.server_key')),
+        ], $tambahan);
     }
 
     private function buatCustomer(string $nama): array
