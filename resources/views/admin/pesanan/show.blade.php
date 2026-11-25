@@ -19,7 +19,11 @@
         <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="font-semibold text-gray-900">Detail Pesanan</h2>
-                <a href="{{ route('admin.pesanan.index') }}" class="text-sm text-brand-800 hover:text-brand-900">&larr; Semua pesanan</a>
+                <div class="flex items-center gap-3">
+                    <a href="{{ $tipe === 'jasa' ? route('admin.pesanan.jasa.invoice', $pesanan) : route('admin.pesanan.produk.invoice', $pesanan) }}"
+                       class="text-sm text-brand-800 hover:text-brand-900">Invoice</a>
+                    <a href="{{ route('admin.pesanan.index') }}" class="text-sm text-brand-800 hover:text-brand-900">&larr; Semua pesanan</a>
+                </div>
             </div>
 
             <dl class="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm">
@@ -137,5 +141,23 @@
             @endunless
         </section>
     </div>
+
+    @if ($pesanan->relationLoaded('riwayat') && $pesanan->riwayat->isNotEmpty())
+        <section class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="Riwayat pesanan">
+            <h2 class="mb-4 font-semibold text-gray-900">Riwayat Pesanan</h2>
+            <ol class="space-y-3 border-l border-gray-200 pl-4">
+                @foreach ($pesanan->riwayat->sortByDesc('created_at') as $r)
+                    <li class="relative">
+                        <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-brand-600"></span>
+                        <p class="text-sm font-medium">{{ \App\Support\CatatanPesanan::label($r->status) }}</p>
+                        @if ($r->keterangan)
+                            <p class="text-xs text-gray-500">{{ $r->keterangan }}</p>
+                        @endif
+                        <p class="text-xs text-gray-400">{{ $r->created_at?->format('d M Y H:i') }}</p>
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+    @endif
 @endsection
 

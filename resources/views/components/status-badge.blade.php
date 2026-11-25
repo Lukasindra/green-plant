@@ -14,6 +14,7 @@
         'dikirim'              => ['Dikirim',              'bg-indigo-100 text-indigo-800'],
         'selesai'              => ['Selesai',              'bg-brand-100 text-brand-800'],
         'dibatalkan'           => ['Dibatalkan',           'bg-red-100 text-red-800'],
+        'perlu_tindakan'       => ['Perlu tindakan',       'bg-orange-100 text-orange-800'],
         'menunggu_konfirmasi'  => ['Menunggu konfirmasi',  'bg-blue-100 text-blue-800'],
         'dijadwalkan'          => ['Dijadwalkan',          'bg-indigo-100 text-indigo-800'],
         'dikerjakan'           => ['Dikerjakan',           'bg-blue-100 text-blue-800'],

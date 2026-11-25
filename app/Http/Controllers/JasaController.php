@@ -7,7 +7,9 @@ use App\Models\Kategori;
 use App\Models\PesananJasa;
 use App\Services\MidtransService;
 use App\Services\PembayaranService;
+use App\Support\CatatanPesanan;
 use App\Support\PencarianKatalog;
+use App\Support\PemberitahuanPesanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +108,9 @@ class JasaController extends Controller
 
             return $pesanan;
         });
+
+        CatatanPesanan::catat($pesanan, 'dibuat', 'Pemesanan jasa dibuat, menunggu pembayaran.');
+        PemberitahuanPesanan::kirim($pesanan, 'dibuat', 'jasa');
 
         try {
             $orderId = $pesanan->invoice_number;         // order_id awal = invoice_number

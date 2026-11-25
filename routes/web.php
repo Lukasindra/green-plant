@@ -1,25 +1,28 @@
-﻿<?php
-use App\Http\Controllers\BerandaController;
+<?php
+
 use App\Http\Controllers\Admin\JasaController as AdminJasaController;
 use App\Http\Controllers\Admin\KategoriController as AdminKategoriController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
+use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Admin\PengaturanController as AdminPengaturanController;
 use App\Http\Controllers\Admin\PenggunaController as AdminPenggunaController;
-use App\Http\Controllers\Admin\PembayaranController as AdminPembayaranController;
 use App\Http\Controllers\Admin\PengirimanController as AdminPengirimanController;
 use App\Http\Controllers\Admin\PesananController as AdminPesananController;
 use App\Http\Controllers\Admin\ProdukController as AdminProdukController;
-use App\Http\Controllers\Kurir\PengirimanController as KurirPengirimanController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JasaController;
 use App\Http\Controllers\KeranjangController;
+use App\Http\Controllers\Kurir\PengirimanController as KurirPengirimanController;
+use App\Http\Controllers\LupaPasswordController;
 use App\Http\Controllers\MidtransNotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\PesananJasaController;
 use App\Http\Controllers\ProdukController;
-use App\Http\Controllers\JasaController;
+use App\Http\Controllers\ProfilController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', BerandaController::class)->name('beranda');
@@ -64,6 +67,8 @@ Route::delete('/admin/kategori/{kategori}', [AdminKategoriController::class, 'de
 Route::get('/admin/pesanan', [AdminPesananController::class, 'index'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.index');
 Route::get('/admin/pesanan/produk/{pesanan}', [AdminPesananController::class, 'showProduk'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.produk.show');
 Route::get('/admin/pesanan/jasa/{pesanan}', [AdminPesananController::class, 'showJasa'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.jasa.show');
+Route::get('/admin/pesanan/produk/{pesanan}/invoice', [AdminPesananController::class, 'invoiceProduk'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.produk.invoice');
+Route::get('/admin/pesanan/jasa/{pesanan}/invoice', [AdminPesananController::class, 'invoiceJasa'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.jasa.invoice');
 Route::post('/admin/pesanan/produk/{pesanan}/aksi', [AdminPesananController::class, 'aksiProduk'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.produk.aksi');
 Route::post('/admin/pesanan/jasa/{pesanan}/aksi', [AdminPesananController::class, 'aksiJasa'])->middleware(['auth', 'role:admin'])->name('admin.pesanan.jasa.aksi');
 
@@ -110,9 +115,21 @@ Route::middleware('guest')->group(function () {
     Route::post('/daftar', [AuthController::class, 'register'])->middleware('throttle:10,1');
 });
 
+// Lupa/reset password (boleh diakses walau sudah login, mis. dari email)
+Route::get('/lupa-password', [LupaPasswordController::class, 'form'])->name('password.request');
+Route::post('/lupa-password', [LupaPasswordController::class, 'kirim'])
+    ->middleware('throttle:6,1')->name('password.email');
+Route::get('/reset-password/{token}', [LupaPasswordController::class, 'formReset'])->name('password.reset');
+Route::post('/reset-password', [LupaPasswordController::class, 'reset'])
+    ->middleware('throttle:6,1')->name('password.update');
+
 // Hanya untuk yang sudah login
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/profil', [ProfilController::class, 'index'])->name('profil.index');
+    Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
+    Route::put('/profil/password', [ProfilController::class, 'password'])->name('profil.password');
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:10,1');
@@ -131,11 +148,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/pesanan', [PesananController::class, 'index'])->name('pesanan.index');
     Route::get('/pesanan/{pesanan}', [PesananController::class, 'show'])->name('pesanan.show');
+    Route::get('/pesanan/{pesanan}/invoice', [PesananController::class, 'invoice'])->name('pesanan.invoice');
     Route::post('/pesanan/{pesanan}/batalkan', [PesananController::class, 'batalkan'])
         ->name('pesanan.batalkan')->middleware('throttle:10,1');
 
     Route::get('/pesanan-jasa', [PesananJasaController::class, 'index'])->name('pesanan-jasa.index');
     Route::get('/pesanan-jasa/{pesanan}', [PesananJasaController::class, 'show'])->name('pesanan-jasa.show');
+    Route::get('/pesanan-jasa/{pesanan}/invoice', [PesananJasaController::class, 'invoice'])->name('pesanan-jasa.invoice');
     Route::post('/pesanan-jasa/{pesanan}/batalkan', [PesananJasaController::class, 'batalkan'])
         ->name('pesanan-jasa.batalkan')->middleware('throttle:10,1');
 });

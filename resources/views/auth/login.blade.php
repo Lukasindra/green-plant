@@ -26,6 +26,10 @@
         @error('password') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
     </div>
 
+    <p class="text-right text-sm">
+        <a href="{{ route('password.request') }}" class="text-brand-700 hover:underline">Lupa password?</a>
+    </p>
+
     <label class="flex items-center gap-2 text-sm text-gray-600">
         <input type="checkbox" name="ingat" value="1" class="rounded border-gray-300 accent-brand-700"> Ingat saya
     </label>

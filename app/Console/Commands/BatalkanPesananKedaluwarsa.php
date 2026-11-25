@@ -5,6 +5,9 @@ namespace App\Console\Commands;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
 use App\Services\PembayaranService;
+use App\Services\ReservasiStokService;
+use App\Support\CatatanPesanan;
+use App\Support\PemberitahuanPesanan;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 
@@ -35,6 +38,11 @@ class BatalkanPesananKedaluwarsa extends Command
 
         $batas = now()->subDays($hari)->toDateString();
         $dryRun = (bool) $this->option('dry-run');
+
+        if (! $dryRun) {
+            // Reservasi yang sudah lewat masa berlaku tidak lagi menahan stok.
+            app(ReservasiStokService::class)->bersihkanKedaluwarsa();
+        }
 
         foreach (['produk' => PesananProduk::class, 'jasa' => PesananJasa::class] as $nama => $model) {
             $tabel = (new $model)->getTable();
@@ -80,6 +88,13 @@ class BatalkanPesananKedaluwarsa extends Command
 
                     if ($terbatalkan > 0) {
                         $dibatalkan++;
+
+                        if ($nama === 'produk') {
+                            app(ReservasiStokService::class)->lepas($pesanan);
+                        }
+
+                        CatatanPesanan::catat($pesanan, 'dibatalkan', 'Dibatalkan otomatis karena pembayaran kedaluwarsa.');
+                        PemberitahuanPesanan::kirim($pesanan, 'dibatalkan', $nama);
                     }
                 }
             });

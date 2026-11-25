@@ -75,6 +75,7 @@
                         @if (auth()->user()->isKurir())
                             <a href="{{ route('kurir.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Tugas Antar</a>
                         @endif
+                        <a href="{{ route('profil.index') }}" class="text-xs font-medium text-gray-600 hover:text-brand-700">Profil</a>
                         <span class="hidden max-w-32 truncate text-gray-700 md:inline">{{ auth()->user()->nama }}</span>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -126,6 +127,7 @@
                     @if (auth()->user()->isKurir())
                         <a href="{{ route('kurir.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Tugas Antar</a>
                     @endif
+                    <a href="{{ route('profil.index') }}" class="block rounded-lg px-3 py-2.5 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-brand-700">Profil Saya</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="block w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50">Keluar</button>

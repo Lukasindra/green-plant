@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
+use App\Services\ReservasiStokService;
+use App\Support\CatatanPesanan;
+use App\Support\PemberitahuanPesanan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -45,6 +48,10 @@ class PesananController extends Controller
     {
         $pesanan->load('detail.produk', 'customer.akun');
 
+        if (Schema::hasTable('riwayat_pesanan')) {
+            $pesanan->load('riwayat');
+        }
+
         return view('admin.pesanan.show', [
             'pesanan' => $pesanan,
             'tipe' => 'produk',
@@ -55,10 +62,28 @@ class PesananController extends Controller
     {
         $pesanan->load('detail.jasa', 'customer.akun');
 
+        if (Schema::hasTable('riwayat_pesanan')) {
+            $pesanan->load('riwayat');
+        }
+
         return view('admin.pesanan.show', [
             'pesanan' => $pesanan,
             'tipe' => 'jasa',
         ]);
+    }
+
+    public function invoiceProduk(PesananProduk $pesanan): View
+    {
+        $pesanan->load('detail.produk', 'customer.akun');
+
+        return view('invoice', ['pesanan' => $pesanan, 'tipe' => 'produk']);
+    }
+
+    public function invoiceJasa(PesananJasa $pesanan): View
+    {
+        $pesanan->load('detail.jasa', 'customer.akun');
+
+        return view('invoice', ['pesanan' => $pesanan, 'tipe' => 'jasa']);
     }
 
     public function aksiProduk(Request $request, PesananProduk $pesanan): RedirectResponse
@@ -73,7 +98,7 @@ class PesananController extends Controller
 
     private function ambilPesanan(string $tipe, ?string $status)
     {
-        $status = in_array($status, ['unpaid', 'paid', 'failed', 'dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)
+        $status = in_array($status, ['unpaid', 'paid', 'failed', 'dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan', 'perlu_tindakan'], true)
             ? $status
             : null;
 
@@ -93,7 +118,7 @@ class PesananController extends Controller
 
             if (in_array($status, ['unpaid', 'paid', 'failed'], true)) {
                 $query->where('status_pembayaran', $status);
-            } elseif (in_array($status, ['dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan'], true)) {
+            } elseif (in_array($status, ['dijadwalkan', 'dikerjakan', 'dikirim', 'selesai', 'dibatalkan', 'perlu_tindakan'], true)) {
                 if (Schema::hasColumn((new $model)->getTable(), 'status_pesanan')) {
                     $query->where('status_pesanan', $status);
                 } else {
@@ -147,7 +172,40 @@ class PesananController extends Controller
 
         $pesanan->save();
 
+        $this->catatAksi($pesanan, $aksi, $tipe);
+
         return $this->kembali($request, $tipe, $pesanan, $pesan, 'status');
+    }
+
+    /** Simpan jejak perubahan status + kirim email untuk aksi yang relevan. */
+    private function catatAksi($pesanan, string $aksi, string $tipe): void
+    {
+        $status = match ($aksi) {
+            'dikirim'     => 'dikirim',
+            'jadwalkan'   => 'dijadwalkan',
+            'mulai_kerja' => 'dikerjakan',
+            'selesai'     => 'selesai',
+            'batalkan'    => 'dibatalkan',
+            default       => null,
+        };
+
+        if ($status === null) {
+            return;
+        }
+
+        CatatanPesanan::catat($pesanan, $status, 'Diperbarui oleh admin.');
+
+        if ($aksi === 'batalkan') {
+            if ($tipe === 'produk') {
+                app(ReservasiStokService::class)->lepas($pesanan);
+            }
+
+            PemberitahuanPesanan::kirim($pesanan, 'dibatalkan', $tipe);
+        }
+
+        if ($aksi === 'dikirim') {
+            PemberitahuanPesanan::kirim($pesanan, 'dikirim', $tipe);
+        }
     }
 
     private function aksiDikirim($pesanan, bool $lunas, bool $punyaStatusPesanan, string $statusPesanan): ?string

@@ -52,7 +52,12 @@ class Notifikasi
 
         $stokRendah = self::hitung(fn () => Produk::query()->where('stok', '<=', self::BATAS_STOK_RENDAH)->count());
 
+        $perluTindakan = self::hitung(fn () => PesananProduk::query()
+            ->where('status_pesanan', 'perlu_tindakan')
+            ->count());
+
         return self::susun([
+            ['Pesanan perlu tindakan', 'Sudah dibayar tetapi stok tidak mencukupi (perlu refund/penyesuaian)', $perluTindakan, route('admin.pesanan.index', ['tipe' => 'produk', 'status' => 'perlu_tindakan'])],
             ['Pembayaran gagal', 'Pesanan gagal/kedaluwarsa dibayar, periksa statusnya', $gagal, route('admin.pembayaran.index', ['jenis' => 'failed'])],
             ['Pesanan siap dikirim', 'Pilih kurir lalu tandai dikirim', $siapKirim, route('admin.pengiriman.index')],
             ['Jasa perlu dijadwalkan', 'Sudah dibayar, belum ada jadwal pengerjaan', $perluJadwal, route('admin.pesanan.index', ['tipe' => 'jasa', 'status' => 'paid'])],

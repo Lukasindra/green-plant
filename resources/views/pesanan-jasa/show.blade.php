@@ -5,7 +5,10 @@
 @section('isi')
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h1 class="text-xl font-semibold">Pesanan {{ $pesanan->kode }}</h1>
-    <a href="{{ route('pesanan-jasa.index') }}" class="text-sm text-brand-700 hover:underline">&larr; Semua pesanan jasa</a>
+    <div class="flex items-center gap-3">
+        <a href="{{ route('pesanan-jasa.invoice', $pesanan) }}" class="text-sm text-brand-700 hover:underline">Invoice</a>
+        <a href="{{ route('pesanan-jasa.index') }}" class="text-sm text-brand-700 hover:underline">&larr; Semua pesanan jasa</a>
+    </div>
 </div>
 
 @if ($pesanan->status_pesanan !== 'dibatalkan')
@@ -99,4 +102,22 @@
         @endif
     </section>
 </div>
+
+@if ($pesanan->relationLoaded('riwayat') && $pesanan->riwayat->isNotEmpty())
+    <section class="mt-6 rounded-xl border border-gray-200 bg-white p-5" aria-label="Riwayat pesanan">
+        <h2 class="mb-4 text-sm font-semibold">Riwayat Pesanan</h2>
+        <ol class="space-y-3 border-l border-gray-200 pl-4">
+            @foreach ($pesanan->riwayat->sortByDesc('created_at') as $r)
+                <li class="relative">
+                    <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-brand-600"></span>
+                    <p class="text-sm font-medium">{{ \App\Support\CatatanPesanan::label($r->status) }}</p>
+                    @if ($r->keterangan)
+                        <p class="text-xs text-gray-500">{{ $r->keterangan }}</p>
+                    @endif
+                    <p class="text-xs text-gray-400">{{ $r->created_at?->format('d M Y H:i') }}</p>
+                </li>
+            @endforeach
+        </ol>
+    </section>
+@endif
 @endsection

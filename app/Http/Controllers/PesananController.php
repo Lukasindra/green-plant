@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\PesananProduk;
+use App\Services\ReservasiStokService;
+use App\Support\CatatanPesanan;
+use App\Support\PemberitahuanPesanan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 
 class PesananController extends Controller
 {
@@ -26,7 +30,23 @@ class PesananController extends Controller
 
         $pesanan->load('detail.produk');
 
+        if (Schema::hasTable('riwayat_pesanan')) {
+            $pesanan->load('riwayat');
+        }
+
         return view('pesanan.show', compact('pesanan'));
+    }
+
+    public function invoice(PesananProduk $pesanan)
+    {
+        Gate::authorize('view', $pesanan);
+
+        $pesanan->load('detail.produk', 'customer.akun');
+
+        return view('invoice', [
+            'pesanan' => $pesanan,
+            'tipe'    => 'produk',
+        ]);
     }
 
     // Customer membatalkan pesanannya sendiri selama pembayaran belum dikonfirmasi Midtrans.
@@ -37,6 +57,12 @@ class PesananController extends Controller
 
         $pesanan->status_pesanan = 'dibatalkan';
         $pesanan->save();
+
+        // Lepaskan stok yang ditahan saat checkout agar bisa dibeli pelanggan lain.
+        app(ReservasiStokService::class)->lepas($pesanan);
+
+        CatatanPesanan::catat($pesanan, 'dibatalkan', 'Dibatalkan oleh pelanggan.');
+        PemberitahuanPesanan::kirim($pesanan, 'dibatalkan', 'produk');
 
         return redirect()
             ->route('pesanan.show', $pesanan)

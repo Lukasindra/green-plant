@@ -6,6 +6,7 @@ use App\Models\Concerns\DibayarViaMidtrans;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class PesananProduk extends Model
 {
@@ -39,4 +40,6 @@ class PesananProduk extends Model
     public function admin(): BelongsTo { return $this->belongsTo(Karyawan::class, 'admin_id'); }
     public function kurir(): BelongsTo { return $this->belongsTo(Karyawan::class, 'kurir_id'); }
     public function detail(): HasMany { return $this->hasMany(DetailPesananProduk::class, 'pesanan_produk_id'); }
+    public function riwayat(): MorphMany { return $this->morphMany(RiwayatPesanan::class, 'pesanan'); }
+    public function reservasi(): HasMany { return $this->hasMany(ReservasiStok::class, 'pesanan_produk_id'); }
 }

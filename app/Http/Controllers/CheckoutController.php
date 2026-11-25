@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\StokTidakCukup;
 use App\Models\DetailPesananProduk;
 use App\Models\PesananProduk;
 use App\Models\Produk;
 use App\Services\MidtransService;
 use App\Services\PembayaranService;
+use App\Services\ReservasiStokService;
+use App\Support\CatatanPesanan;
+use App\Support\PemberitahuanPesanan;
 use App\Support\Toko;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -93,43 +97,55 @@ class CheckoutController extends Controller
 
         $ongkir = Toko::ongkir();
 
-        // Satu record pesanan (status unpaid) + Snap token; stok dipotong setelah Midtrans sukses.
-        $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal, $ongkir) {
-            $punyaStatusPesanan = Schema::hasColumn('pesanan_produk', 'status_pesanan');
+        // Satu record pesanan (status unpaid) + Snap token; stok fisik dipotong setelah
+        // Midtrans sukses, tetapi stok sudah direservasi di sini agar tidak overselling.
+        try {
+            $pesanan = DB::transaction(function () use ($customer, $data, $baris, $subtotal, $ongkir) {
+                $punyaStatusPesanan = Schema::hasColumn('pesanan_produk', 'status_pesanan');
 
-            $pesanan = new PesananProduk([
-                'kode'              => 'PRD-' . now()->format('ymd') . '-' . strtoupper(Str::random(4)),
-                'customer_id'       => $customer->id,
-                'tanggal_pesan'     => now()->toDateString(),
-                'alamat_pengiriman' => $data['alamat_pengiriman'],
-            ]);
-            $pesanan->invoice_number = $pesanan->buatInvoiceNumber();
-            $pesanan->ongkir         = $ongkir;
-            $pesanan->total_bayar    = $subtotal + $ongkir;
-            $pesanan->status_pembayaran = PesananProduk::STATUS_UNPAID;
-
-            if ($punyaStatusPesanan) {
-                $pesanan->status_pesanan = 'menunggu_pembayaran';
-            }
-
-            $pesanan->save();
-
-            foreach ($baris as $b) {
-                DetailPesananProduk::create([
-                    'pesanan_produk_id' => $pesanan->id,
-                    'produk_id'         => $b['produk']->id,
-                    'qty'               => $b['qty'],
-                    'harga'             => $b['produk']->harga,   // harga saat transaksi
-                    'subtotal'          => $b['subtotal'],
+                $pesanan = new PesananProduk([
+                    'kode'              => 'PRD-' . now()->format('ymd') . '-' . strtoupper(Str::random(4)),
+                    'customer_id'       => $customer->id,
+                    'tanggal_pesan'     => now()->toDateString(),
+                    'alamat_pengiriman' => $data['alamat_pengiriman'],
                 ]);
-            }
+                $pesanan->invoice_number = $pesanan->buatInvoiceNumber();
+                $pesanan->ongkir         = $ongkir;
+                $pesanan->total_bayar    = $subtotal + $ongkir;
+                $pesanan->status_pembayaran = PesananProduk::STATUS_UNPAID;
 
-            return $pesanan;
-        });
+                if ($punyaStatusPesanan) {
+                    $pesanan->status_pesanan = 'menunggu_pembayaran';
+                }
+
+                $pesanan->save();
+
+                foreach ($baris as $b) {
+                    DetailPesananProduk::create([
+                        'pesanan_produk_id' => $pesanan->id,
+                        'produk_id'         => $b['produk']->id,
+                        'qty'               => $b['qty'],
+                        'harga'             => $b['produk']->harga,   // harga saat transaksi
+                        'subtotal'          => $b['subtotal'],
+                    ]);
+                }
+
+                // Tahan stok selama menunggu pembayaran. Bila stok sudah diambil
+                // pembeli lain, transaksi di-rollback dan keranjang tidak dikosongkan.
+                app(ReservasiStokService::class)->pesan($pesanan, $baris);
+
+                return $pesanan;
+            });
+        } catch (StokTidakCukup $e) {
+            return redirect()->route('keranjang.index')->with('error', $e->getMessage());
+        }
 
         // Order sudah sah tersimpan: kosongkan keranjang sekarang juga.
         // Kalau pembuatan token gagal, user tetap hanya punya SATU order (bayar lewat "Coba Bayar Ulang").
         session()->forget('cart');
+
+        CatatanPesanan::catat($pesanan, 'dibuat', 'Pesanan dibuat, menunggu pembayaran.');
+        PemberitahuanPesanan::kirim($pesanan, 'dibuat', 'produk');
 
         try {
             $orderId = $pesanan->invoice_number;   // order_id awal = invoice_number

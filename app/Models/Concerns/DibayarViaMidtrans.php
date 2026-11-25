@@ -2,6 +2,9 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\PesananJasa;
+use App\Models\PesananProduk;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -34,12 +37,31 @@ trait DibayarViaMidtrans
         for ($i = 0; $i < 5; $i++) {
             $invoice = $awalan . strtoupper(Str::random(4));
 
-            if (! static::query()->where('invoice_number', $invoice)->exists()) {
+            if (! self::invoiceSudahDipakai($invoice)) {
                 return $invoice;
             }
         }
 
         // Serangan keberuntungan terakhir: tambah kata acak yang lebih panjang
         return $awalan . strtoupper(Str::random(8));
+    }
+
+    /**
+     * Nomor invoice harus unik lintas tabel produk & jasa. Tanpa ini, webhook
+     * Midtrans bisa mencocokkan pesanan dari tabel yang salah.
+     */
+    private static function invoiceSudahDipakai(string $invoice): bool
+    {
+        foreach ([PesananProduk::class, PesananJasa::class] as $model) {
+            $tabel = (new $model)->getTable();
+
+            if (Schema::hasTable($tabel)
+                && Schema::hasColumn($tabel, 'invoice_number')
+                && $model::query()->where('invoice_number', $invoice)->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,4 +29,10 @@ class Akun extends Authenticatable
     public function isAdmin(): bool    { return $this->role === 'admin'; }
     public function isKurir(): bool    { return $this->role === 'kurir'; }
     public function isCustomer(): bool { return $this->role === 'customer'; }
+
+    /** Gunakan email reset berbahasa Indonesia, bukan template bawaan Laravel. */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
 }

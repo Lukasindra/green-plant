@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
 use App\Models\Produk;
+use App\Support\CatatanPesanan;
+use App\Support\PemberitahuanPesanan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -26,8 +28,10 @@ class PembayaranService
         'jasa'   => PesananJasa::class,
     ];
 
-    public function __construct(private MidtransService $midtrans)
-    {
+    public function __construct(
+        private MidtransService $midtrans,
+        private ReservasiStokService $reservasi,
+    ) {
     }
 
     /**
@@ -207,8 +211,9 @@ class PembayaranService
     public function tandaiLunas($pesanan, string $tipe): ?string
     {
         $peringatan = null;
+        $segar      = null;
 
-        DB::transaction(function () use ($pesanan, $tipe, &$peringatan): void {
+        DB::transaction(function () use ($pesanan, $tipe, &$peringatan, &$segar): void {
             $tabel = $pesanan->getTable();
 
             // Kunci baris pesanan: dua callback/notifikasi bersamaan tidak boleh
@@ -216,6 +221,8 @@ class PembayaranService
             $segar = $pesanan->newQuery()->whereKey($pesanan->getKey())->lockForUpdate()->first();
 
             if (! $segar || $segar->sudahLunas()) {
+                $segar = null;
+
                 return;
             }
 
@@ -238,13 +245,32 @@ class PembayaranService
             if ($tipe === 'produk' && Schema::hasTable('produk')) {
                 try {
                     $this->kurangiStok($segar);
+                    $this->reservasi->konfirmasi($segar);
                 } catch (\RuntimeException $e) {
-                    // Uang sudah masuk lewat Midtrans: pesanan tetap lunas, admin diberi tahu lewat log.
+                    // Uang sudah masuk lewat Midtrans: pesanan tetap lunas, tetapi
+                    // admin harus menindaklanjuti (refund/penyesuaian) lewat notifikasi.
                     Log::error('Stok tidak cukup untuk pesanan ' . $segar->invoice_number . ': ' . $e->getMessage());
                     $peringatan = $e->getMessage();
+
+                    if (Schema::hasColumn($tabel, 'status_pesanan')) {
+                        $segar->status_pesanan = 'perlu_tindakan';
+                        $segar->save();
+                    }
+
+                    $this->reservasi->lepas($segar);
                 }
             }
         });
+
+        if ($segar) {
+            CatatanPesanan::catat($segar, 'lunas', 'Pembayaran dikonfirmasi Midtrans.');
+
+            if ($peringatan) {
+                CatatanPesanan::catat($segar, 'perlu_tindakan', $peringatan);
+            }
+
+            PemberitahuanPesanan::kirim($segar, 'lunas', $tipe);
+        }
 
         return $peringatan;
     }
@@ -291,6 +317,8 @@ class PembayaranService
 
         $pesanan->status_pembayaran = $pesanan::STATUS_FAILED;
         $pesanan->save();
+
+        CatatanPesanan::catat($pesanan, 'gagal', 'Pembayaran gagal atau kedaluwarsa di Midtrans.');
     }
 
     /** Simpan ID transaksi & jenis pembayaran Midtrans bila kolomnya tersedia. */
@@ -321,6 +349,9 @@ class PembayaranService
     /** Potong stok dengan kunci baris agar dua proses bersamaan tidak sama-sama lolos. */
     private function kurangiStok(PesananProduk $pesanan): void
     {
+        $produkTerkunci = [];
+
+        // Validasi SEMUA baris lebih dulu; kalau satu kurang, jangan potong sebagian.
         foreach ($pesanan->detail()->get() as $detail) {
             if (! $detail->produk_id) {
                 continue;
@@ -334,7 +365,11 @@ class PembayaranService
                 );
             }
 
-            $produk->decrement('stok', $detail->qty);
+            $produkTerkunci[$produk->id] = [$produk, $detail->qty];
+        }
+
+        foreach ($produkTerkunci as [$produk, $qty]) {
+            $produk->decrement('stok', $qty);
         }
     }
 }

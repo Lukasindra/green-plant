@@ -1,58 +1,121 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Green Plant
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Toko online tanaman hias dan jasa taman: katalog, keranjang, checkout, pembayaran
+Midtrans Snap, pelacakan pesanan, dashboard admin, dan tugas kurir.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3 / Laravel 13
+- PostgreSQL (produksi & lokal); test memakai SQLite in-memory
+- Vite + Tailwind CSS
+- Midtrans Snap (sandbox/production)
+- PHPUnit
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup Lokal
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env        # Windows: copy .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Isi koneksi database di `.env` (`DB_*`), lalu:
 
-## Contributing
+```bash
+php artisan migrate --seed
+php artisan storage:link
+npm install
+npm run dev
+php artisan serve
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Buka `http://localhost:8000`.
 
-## Code of Conduct
+### Akun demo (hasil seeder)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Peran | Email | Password |
+|---|---|---|
+| Admin | `admin@greenplant.test` | `password` |
+| Kurir | `kurir@greenplant.test` | `password` |
+| Customer | `customer@greenplant.test` | `password` |
 
-## Security Vulnerabilities
+Ganti `SEED_PASSWORD` dan email demo di `.env` sebelum deploy. Seeder aman
+dijalankan berulang (`updateOrCreate`) dan mengisi kategori, contoh produk/jasa,
+serta ongkir awal.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Midtrans
 
-## License
+Isi kredensial di `.env`:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```env
+MIDTRANS_MERCHANT_ID=
+MIDTRANS_CLIENT_KEY=
+MIDTRANS_SERVER_KEY=
+MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_NOTIFICATION_URL=
+```
+
+Atur URL notifikasi di dashboard Midtrans ke:
+
+```text
+https://domain-anda/midtrans/notifikasi
+```
+
+Saat pengembangan lokal, gunakan tunnel (mis. ngrok) dan isi
+`MIDTRANS_NOTIFICATION_URL`.
+
+## Scheduler
+
+Pembayaran dan pembatalan otomatis membutuhkan scheduler:
+
+```bash
+php artisan schedule:work        # lokal
+```
+
+Di server, tambahkan cron:
+
+```cron
+* * * * * cd /path/green-plant && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Yang dijadwalkan:
+
+- `pesanan:sinkronkan-pembayaran` — rekonsiliasi status Midtrans tiap 10 menit.
+- `pesanan:batalkan-kedaluwarsa` — membatalkan pesanan belum dibayar setiap 01:00.
+
+## Fitur Utama
+
+- Katalog produk & jasa dengan pencarian case-insensitive (termasuk kategori).
+- Keranjang berbasis session, checkout dengan reservasi stok 24 jam (anti-overselling).
+- Pembayaran Midtrans Snap: webhook bertanda tangan, polling, bayar ulang, rekonsiliasi.
+- Stok fisik dipotong setelah lunas; jika stok tidak cukup, pesanan ditandai
+  `perlu_tindakan` dan muncul di notifikasi admin.
+- Riwayat status pesanan (timeline) untuk customer dan admin.
+- Invoice yang bisa dicetak/disimpan sebagai PDF.
+- Email transaksional: pesanan dibuat, lunas, dikirim, dibatalkan.
+- Profil customer (nama, HP, alamat, ganti password) dan lupa/reset password.
+- Admin: produk, jasa, kategori, pesanan, pembayaran, pengiriman, laporan,
+  pengguna, pengaturan ongkir.
+- Kurir: daftar tugas antar dan konfirmasi selesai.
+
+## Testing
+
+```bash
+php artisan test
+./vendor/bin/pint --test
+npm run build
+```
+
+Test memakai SQLite in-memory dan tidak memanggil jaringan Midtrans.
+
+## Struktur Penting
+
+- `app/Services/PembayaranService.php` — satu pintu perubahan status pembayaran.
+- `app/Services/ReservasiStokService.php` — reservasi stok saat checkout.
+- `app/Support/CatatanPesanan.php` — pencatat riwayat pesanan.
+- `app/Support/PencarianKatalog.php` — pencarian katalog lintas database.
+- `database/migrations/2026_11_18_000000_buat_tabel_inti.php` — skema dasar idempotent.
+
+## Lisensi
+
+Aplikasi internal Green Plant. Framework Laravel memakai lisensi MIT.

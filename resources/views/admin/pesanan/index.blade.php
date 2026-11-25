@@ -14,6 +14,7 @@
             'dikirim' => 'Dikirim',
             'selesai' => 'Selesai',
             'dibatalkan' => 'Dibatalkan',
+            'perlu_tindakan' => 'Perlu tindakan',
         ];
 
         $daftarTipe = [
