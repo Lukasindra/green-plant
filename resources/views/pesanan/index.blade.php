@@ -29,7 +29,7 @@
                 @foreach ($pesanan as $p)
                     <tr>
                         <td class="px-4 py-3 font-medium">{{ $p->kode }}</td>
-                        <td class="px-4 py-3">{{ $p->tanggal_pesan->format('d M Y') }}</td>
+                        <td class="px-4 py-3">{{ $p->tanggal_pesan->translatedFormat('d M Y') }}</td>
                         <td class="px-4 py-3">Rp {{ number_format($p->total_bayar, 0, ',', '.') }}</td>
                         <td class="px-4 py-3"><x-status-badge :nilai="$p->status_pembayaran" /></td>
                         <td class="px-4 py-3"><x-status-badge :nilai="$p->status_pesanan" /></td>

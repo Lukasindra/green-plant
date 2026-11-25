@@ -130,7 +130,7 @@
                                             <span class="text-gray-400">-</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $order['tanggal']->format('d M Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $order['tanggal']->translatedFormat('d M Y') }}</td>
                                     <td class="whitespace-nowrap px-5 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($order['nilai'], 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach

@@ -47,8 +47,8 @@
         <h2 class="mb-3 text-sm font-semibold">Detail Pesanan</h2>
 
         <dl class="mb-4 grid grid-cols-[110px_1fr] gap-y-1 text-sm">
-            <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan->format('d M Y') }}</dd>
-            <dt class="text-gray-500">Jadwal</dt><dd>{{ $pesanan->jadwal_pengerjaan?->format('d M Y, H:i') ?? '-' }}</dd>
+            <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan->translatedFormat('d M Y') }}</dd>
+            <dt class="text-gray-500">Jadwal</dt><dd>{{ $pesanan->jadwal_pengerjaan?->translatedFormat('d M Y, H:i') ?? '-' }}</dd>
             <dt class="text-gray-500">Pembayaran</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
             <dt class="text-gray-500">Status</dt><dd><x-status-badge :nilai="$pesanan->status_pesanan" /></dd>
             <dt class="text-gray-500">Invoice</dt><dd>{{ $pesanan->invoice_number ?? $pesanan->kode }}</dd>
@@ -114,7 +114,7 @@
                     @if ($r->keterangan)
                         <p class="text-xs text-gray-500">{{ $r->keterangan }}</p>
                     @endif
-                    <p class="text-xs text-gray-400">{{ $r->created_at?->format('d M Y H:i') }}</p>
+                    <p class="text-xs text-gray-400">{{ $r->created_at?->translatedFormat('d M Y H:i') }}</p>
                 </li>
             @endforeach
         </ol>

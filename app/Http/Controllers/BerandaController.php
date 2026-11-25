@@ -14,14 +14,14 @@ class BerandaController extends Controller
         if (! Schema::hasTable('produk') || ! Schema::hasTable('jasa')) {
             return view('beranda.index', [
                 'produk' => collect(),
-                'jasa'   => collect(),
+                'jasa' => collect(),
             ]);
         }
 
         return view('beranda.index', [
             // Katalog terbaru untuk section unggulan beranda
-            'produk' => Produk::with('kategori')->orderByDesc('id')->limit(8)->get(),
-            'jasa'   => Jasa::with('kategori')->orderByDesc('id')->limit(6)->get(),
+            'produk' => Produk::with('kategori')->orderByDesc('id')->limit(12)->get(),
+            'jasa' => Jasa::with('kategori')->orderByDesc('id')->limit(6)->get(),
         ]);
     }
 }

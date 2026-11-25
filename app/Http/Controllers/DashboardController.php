@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Jasa;
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
@@ -17,17 +16,17 @@ class DashboardController extends Controller
 {
     /** Opsi rentang grafik penjualan (hari => label tombol). */
     private const PERIODE_GRAFIK = [
-        7   => '7 Hari',
-        30  => '30 Hari',
-        90  => '90 Hari',
+        7 => '7 Hari',
+        30 => '30 Hari',
+        90 => '90 Hari',
         365 => '1 Tahun',
     ];
 
     /** Keterangan rentang untuk subjudul grafik. */
     private const KETERANGAN_PERIODE = [
-        7   => '7 hari terakhir',
-        30  => '30 hari terakhir',
-        90  => '90 hari terakhir',
+        7 => '7 hari terakhir',
+        30 => '30 hari terakhir',
+        90 => '90 hari terakhir',
         365 => '12 bulan terakhir',
     ];
 
@@ -55,7 +54,7 @@ class DashboardController extends Controller
         // 90 hari -> per minggu, 1 tahun -> per bulan.
         $awalGrafik = match ($periode) {
             365 => $hariIni->startOfMonth()->subMonths(11),
-            90  => $hariIni->subDays(89),
+            90 => $hariIni->subDays(89),
             default => $hariIni->subDays($periode - 1),
         };
 
@@ -87,7 +86,7 @@ class DashboardController extends Controller
 
                 return [
                     'tanggal' => $bulan->toDateString(),
-                    'label' => $bulan->format('M Y'),
+                    'label' => $bulan->translatedFormat('M Y'),
                     'nilai' => $nilaiGrafik->get($bulan->format('Y-m'), 0),
                 ];
             }),
@@ -96,7 +95,7 @@ class DashboardController extends Controller
 
                 return [
                     'tanggal' => $mulai->toDateString(),
-                    'label' => $mulai->format('d M'),
+                    'label' => $mulai->translatedFormat('d M'),
                     'nilai' => $nilaiGrafik->get((string) $minggu, 0),
                 ];
             }),
@@ -106,7 +105,7 @@ class DashboardController extends Controller
 
                     return [
                         'tanggal' => $tanggal->toDateString(),
-                        'label' => $tanggal->format('d M'),
+                        'label' => $tanggal->translatedFormat('d M'),
                         'nilai' => $nilaiGrafik->get($tanggal->toDateString(), 0),
                     ];
                 }),

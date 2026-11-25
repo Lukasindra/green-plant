@@ -30,7 +30,7 @@
                 <dt class="text-gray-500">Kode</dt><dd class="font-medium">{{ $pesanan->kode }}</dd>
                 <dt class="text-gray-500">Invoice</dt><dd class="font-medium">{{ $pesanan->invoice_number ?? '-' }}</dd>
                 <dt class="text-gray-500">Pelanggan</dt><dd>{{ $pesanan->customer?->akun?->nama ?? '-' }}</dd>
-                <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan?->format('d M Y') }}</dd>
+                <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan?->translatedFormat('d M Y') }}</dd>
                 <dt class="text-gray-500">Metode</dt><dd>Midtrans Snap</dd>
                 <dt class="text-gray-500">Pembayaran</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
                 <dt class="text-gray-500">Status</dt>
@@ -50,7 +50,7 @@
                         <dt class="text-gray-500">Catatan</dt><dd class="whitespace-pre-line">{{ $pesanan->catatan }}</dd>
                     @endif
                     @if ($pesanan->jadwal_pengerjaan)
-                        <dt class="text-gray-500">Jadwal</dt><dd>{{ $pesanan->jadwal_pengerjaan->format('d M Y H:i') }}</dd>
+                        <dt class="text-gray-500">Jadwal</dt><dd>{{ $pesanan->jadwal_pengerjaan->translatedFormat('d M Y H:i') }}</dd>
                     @endif
                 @endif
             </dl>
@@ -153,7 +153,7 @@
                         @if ($r->keterangan)
                             <p class="text-xs text-gray-500">{{ $r->keterangan }}</p>
                         @endif
-                        <p class="text-xs text-gray-400">{{ $r->created_at?->format('d M Y H:i') }}</p>
+                        <p class="text-xs text-gray-400">{{ $r->created_at?->translatedFormat('d M Y H:i') }}</p>
                     </li>
                 @endforeach
             </ol>

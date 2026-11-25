@@ -41,7 +41,7 @@
         </div>
 
         @if ($jasa->count())
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 @foreach ($jasa as $j)
                     <x-jasa-card :jasa="$j" />
                 @endforeach

@@ -91,7 +91,7 @@
                                             <span class="text-gray-400">-</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->format('d M Y') }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3.5 text-gray-600">{{ $item->tanggal_pesan?->translatedFormat('d M Y') }}</td>
                                     <td class="whitespace-nowrap px-3 py-3.5 text-right font-medium text-gray-800">Rp {{ number_format($item->total_bayar, 0, ',', '.') }}</td>
                                     <td class="px-5 py-3.5">
                                         <div class="flex items-center justify-end gap-3">

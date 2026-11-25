@@ -29,7 +29,7 @@
             </tr>
             <tr>
                 <td style="padding:6px 0;color:#6b7280;">Tanggal</td>
-                <td style="padding:6px 0;text-align:right;">{{ optional($pesanan->tanggal_pesan)->format('d M Y') ?? '-' }}</td>
+                <td style="padding:6px 0;text-align:right;">{{ optional($pesanan->tanggal_pesan)->translatedFormat('d M Y') ?? '-' }}</td>
             </tr>
             <tr>
                 <td style="padding:6px 0;color:#6b7280;">Status pembayaran</td>

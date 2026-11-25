@@ -17,7 +17,7 @@
         <p class="mt-1 text-sm text-gray-500">{{ $pesanan->invoice_number ?? $pesanan->kode }}</p>
     </div>
     <div class="text-right text-sm">
-        <p class="font-medium">{{ $pesanan->tanggal_pesan?->format('d M Y') }}</p>
+        <p class="font-medium">{{ $pesanan->tanggal_pesan?->translatedFormat('d M Y') }}</p>
         <p class="text-gray-500">Kode: {{ $pesanan->kode }}</p>
         <p class="mt-1">
             <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $pesanan->status_pembayaran === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
@@ -49,7 +49,7 @@
             <p class="text-xs text-gray-500">ID transaksi: {{ $pesanan->midtrans_transaction_id }}</p>
         @endif
         @if ($pesanan->tanggal_bayar)
-            <p class="mt-1 text-sm text-gray-600">Dibayar {{ $pesanan->tanggal_bayar->format('d M Y') }}</p>
+            <p class="mt-1 text-sm text-gray-600">Dibayar {{ $pesanan->tanggal_bayar->translatedFormat('d M Y') }}</p>
         @endif
     </div>
 </div>

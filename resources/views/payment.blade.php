@@ -23,7 +23,7 @@
 
         <dl class="mb-4 grid grid-cols-[110px_1fr] gap-y-1 text-sm">
             <dt class="text-gray-500">Kode</dt><dd>{{ $pesanan->kode }}</dd>
-            <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan->format('d M Y') }}</dd>
+            <dt class="text-gray-500">Tanggal</dt><dd>{{ $pesanan->tanggal_pesan->translatedFormat('d M Y') }}</dd>
             <dt class="text-gray-500">Status</dt><dd><x-status-badge :nilai="$pesanan->status_pembayaran" /></dd>
         </dl>
 
