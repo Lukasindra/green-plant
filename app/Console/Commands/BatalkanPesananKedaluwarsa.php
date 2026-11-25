@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\PesananJasa;
 use App\Models\PesananProduk;
+use App\Services\PembayaranService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 
@@ -14,6 +15,11 @@ class BatalkanPesananKedaluwarsa extends Command
                             {--dry-run : Hanya hitung, tanpa mengubah data}';
 
     protected $description = 'Membatalkan pesanan (produk dan jasa) yang belum dibayar dan sudah kedaluwarsa';
+
+    public function __construct(private PembayaranService $pembayaran)
+    {
+        parent::__construct();
+    }
 
     // Kolom tanggal_pesan hanya berisi tanggal (tanpa jam), jadi batasnya dihitung per hari kalender.
     // Dengan --hari=2, pesanan baru dibatalkan setelah lewat lebih dari 24 jam (paling lama sekitar 48 jam).
@@ -31,7 +37,9 @@ class BatalkanPesananKedaluwarsa extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         foreach (['produk' => PesananProduk::class, 'jasa' => PesananJasa::class] as $nama => $model) {
-            if (! Schema::hasColumn((new $model)->getTable(), 'status_pesanan')) {
+            $tabel = (new $model)->getTable();
+
+            if (! Schema::hasColumn($tabel, 'status_pesanan')) {
                 $this->warn("Pesanan {$nama}: kolom status_pesanan tidak ada, dilewati.");
 
                 continue;
@@ -48,12 +56,70 @@ class BatalkanPesananKedaluwarsa extends Command
                 continue;
             }
 
-            // Stok produk baru berkurang saat Midtrans sukses, jadi tidak ada stok yang perlu dikembalikan.
-            $jumlah = $query->update(['status_pesanan' => 'dibatalkan']);
+            $dibatalkan   = 0;
+            $ditahan      = 0;
+            $punyaOrderId = Schema::hasColumn($tabel, 'midtrans_order_id');
 
-            $this->info("Pesanan {$nama} dibatalkan: {$jumlah}");
+            $query->chunkById(100, function ($daftar) use ($model, $nama, $punyaOrderId, &$dibatalkan, &$ditahan): void {
+                foreach ($daftar as $pesanan) {
+                    // Jangan batalkan pesanan yang ternyata sudah dibayar atau masih
+                    // menunggu pembayaran (mis. VA/e-wallet yang settle belakangan).
+                    if ($punyaOrderId && $this->ditahanKarenaMidtrans($pesanan, $nama)) {
+                        $ditahan++;
+
+                        continue;
+                    }
+
+                    // Update bersyarat: jangan menimpa pesanan yang baru saja lunas
+                    // lewat webhook di antara pengecekan dan pembatalan.
+                    $terbatalkan = $model::query()
+                        ->whereKey($pesanan->getKey())
+                        ->where('status_pembayaran', '!=', 'paid')
+                        ->whereNotIn('status_pesanan', ['dibatalkan', 'selesai', 'dikirim', 'dijadwalkan', 'dikerjakan'])
+                        ->update(['status_pesanan' => 'dibatalkan']);
+
+                    if ($terbatalkan > 0) {
+                        $dibatalkan++;
+                    }
+                }
+            });
+
+            // Stok produk baru berkurang saat Midtrans sukses, jadi tidak ada stok yang perlu dikembalikan.
+            $this->info("Pesanan {$nama} dibatalkan: {$dibatalkan}");
+
+            if ($ditahan > 0) {
+                $this->line("Pesanan {$nama} ditahan karena status Midtrans belum final: {$ditahan}");
+            }
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Cek status Midtrans untuk pesanan yang punya order_id.
+     *
+     * @return bool True = jangan dibatalkan (lunas / masih menunggu / tidak bisa dipastikan).
+     */
+    private function ditahanKarenaMidtrans($pesanan, string $tipe): bool
+    {
+        if (blank($pesanan->midtrans_order_id)) {
+            return false;
+        }
+
+        try {
+            $hasil = $this->pembayaran->sinkronkan($pesanan, $tipe);
+        } catch (\Throwable $e) {
+            // Status tidak bisa dipastikan: lebih aman menunda pembatalan.
+            report($e);
+
+            return true;
+        }
+
+        // Transaksi belum pernah dibuat di Midtrans (token tidak dipakai): aman dibatalkan.
+        if ($hasil['belum_ada'] ?? false) {
+            return false;
+        }
+
+        return in_array($hasil['status'], ['paid', 'pending', 'tidak_diketahui'], true);
     }
 }

@@ -155,6 +155,12 @@
                             <option value="{{ $nilai }}" @selected($periodeAktif === $nilai)>{{ $label }}</option>
                         @endforeach
                     </select>
+
+                    <noscript>
+                        <button type="submit" class="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                            Terapkan
+                        </button>
+                    </noscript>
                 </form>
             </div>
 

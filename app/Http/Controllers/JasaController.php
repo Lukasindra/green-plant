@@ -7,6 +7,7 @@ use App\Models\Kategori;
 use App\Models\PesananJasa;
 use App\Services\MidtransService;
 use App\Services\PembayaranService;
+use App\Support\PencarianKatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 
 class JasaController extends Controller
 {
+    use PencarianKatalog;
+
     public function index(Request $request)
     {
         $data = $request->validate([
@@ -27,12 +30,7 @@ class JasaController extends Controller
 
         $query = Jasa::with('kategori')->orderByDesc('id');
 
-        if ($q !== '') {
-            $query->where(function ($cari) use ($q) {
-                $cari->where('nama', 'like', "%{$q}%")
-                    ->orWhere('deskripsi', 'like', "%{$q}%");
-            });
-        }
+        $this->terapkanPencarian($query, $q);
 
         if ($kategoriAktif) {
             $query->where('kategori_id', $kategoriAktif);

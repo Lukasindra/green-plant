@@ -18,7 +18,8 @@ use Illuminate\View\View;
  *
  * Alur:
  *  - show    : halaman pembayaran yang membuka popup Snap memakai snap_token tersimpan.
- *  - success : callback onSuccess Snap -> verifikasi ke API Midtrans lalu tandai paid.
+ *  - success : callback onSuccess Snap -> verifikasi ke API Midtrans; pesanan
+ *              hanya ditandai lunas bila Midtrans benar-benar mengonfirmasi.
  *  - status  : polling JSON untuk pembayaran yang selesai belakangan (VA/e-wallet).
  *  - retry   : "Coba Bayar Ulang" -> token BARU dengan order_id invoice_number.'-'.time(),
  *              tetap satu record order (invoice_number tidak berubah).
@@ -86,12 +87,16 @@ class PaymentController extends Controller
         }
 
         if ($hasil['status'] !== 'paid') {
-            // Callback onSuccess Snap tetap menjadi bukti utama bila verifikasi API
-            // belum tersedia (gangguan jaringan / status Midtrans belum berubah).
-            $hasil = [
-                'status'     => 'paid',
-                'peringatan' => $this->pembayaran->tandaiLunas($pesanan, $tipe),
-            ];
+            // Jangan pernah menandai lunas tanpa konfirmasi Midtrans. Status pending
+            // atau API yang sedang tidak dapat dihubungi akan diselesaikan oleh
+            // webhook, polling halaman pembayaran, atau rekonsiliasi latar belakang.
+            return redirect()
+                ->route('payment.show', [
+                    'tipe'     => $tipe,
+                    'pesanan'  => $pesanan->id,
+                    'menunggu' => 1,
+                ])
+                ->with('info', 'Pembayaran belum dikonfirmasi Midtrans. Status pesanan akan diperbarui otomatis setelah pembayaran diterima.');
         }
 
         if (filled($hasil['peringatan'] ?? null)) {

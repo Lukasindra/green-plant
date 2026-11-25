@@ -39,16 +39,22 @@ class CustomerKatalogTest extends TestCase
             $table->string('foto')->nullable();
         });
 
-        DB::table('kategori')->insert(['nama' => 'Tanaman Hias', 'tipe' => 'produk']);
+        DB::table('kategori')->insert([
+            ['nama' => 'Tanaman Hias', 'tipe' => 'produk'],
+            ['nama' => 'Tanaman Obat', 'tipe' => 'produk'],
+            ['nama' => 'Dekorasi Acara', 'tipe' => 'jasa'],
+        ]);
 
         DB::table('produk')->insert([
             ['kategori_id' => 1, 'nama' => 'Monstera Deliciosa', 'deskripsi' => 'Tanaman daun besar khas tropis', 'harga' => 120000, 'stok' => 10, 'foto' => null],
             ['kategori_id' => 1, 'nama' => 'Palem Ekor Tupai', 'deskripsi' => 'Palem indah untuk pekarangan', 'harga' => 250000, 'stok' => 5, 'foto' => null],
+            ['kategori_id' => 2, 'nama' => 'Lidah Buaya', 'deskripsi' => 'Tanaman herbal untuk pekarangan', 'harga' => 30000, 'stok' => 7, 'foto' => null],
         ]);
 
         DB::table('jasa')->insert([
             ['kategori_id' => null, 'nama' => 'Perawatan Rutin', 'deskripsi' => 'Kunjungan penyiraman dan pemangkasan', 'harga' => 150000, 'satuan' => 'kunjungan', 'foto' => null],
             ['kategori_id' => null, 'nama' => 'Pembuatan Taman', 'deskripsi' => 'Taman baru dari nol', 'harga' => 2000000, 'satuan' => 'proyek', 'foto' => null],
+            ['kategori_id' => 3, 'nama' => 'Dekorasi Panggung', 'deskripsi' => 'Dekorasi acara pernikahan', 'harga' => 1500000, 'satuan' => 'acara', 'foto' => null],
         ]);
     }
 
@@ -74,5 +80,34 @@ class CustomerKatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Perawatan Rutin')
             ->assertDontSee('Pembuatan Taman');
+    }
+
+    public function test_pencarian_produk_cocok_dengan_nama_kategori(): void
+    {
+        $this->get('/produk?q=obat')
+            ->assertOk()
+            ->assertSee('Lidah Buaya')
+            ->assertDontSee('Monstera Deliciosa')
+            ->assertDontSee('Palem Ekor Tupai');
+    }
+
+    public function test_pencarian_jasa_cocok_dengan_nama_kategori(): void
+    {
+        $this->get('/jasa?q=dekorasi')
+            ->assertOk()
+            ->assertSee('Dekorasi Panggung')
+            ->assertDontSee('Perawatan Rutin')
+            ->assertDontSee('Pembuatan Taman');
+    }
+
+    public function test_pencarian_tidak_peka_huruf_besar_kecil(): void
+    {
+        $this->get('/produk?q=MONSTERA')
+            ->assertOk()
+            ->assertSee('Monstera Deliciosa');
+
+        $this->get('/jasa?q=PERAWATAN')
+            ->assertOk()
+            ->assertSee('Perawatan Rutin');
     }
 }

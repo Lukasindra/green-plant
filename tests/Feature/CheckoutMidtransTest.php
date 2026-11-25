@@ -209,6 +209,87 @@ class CheckoutMidtransTest extends TestCase
         $this->assertSame(6, (int) DB::table('produk')->where('id', $produk)->value('stok'));
     }
 
+    public function test_payment_success_does_not_mark_order_paid_when_midtrans_is_not_settled(): void
+    {
+        [$customer, $akun] = $this->buatCustomer('Nadia Puspita');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-913', 50000, [
+            'invoice_number'    => 'INV-20261123-NP01',
+            'midtrans_order_id' => 'INV-20261123-NP01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldReceive('status')
+                ->once()
+                ->andReturn([
+                    'status_code'        => '201',
+                    'order_id'           => 'INV-20261123-NP01',
+                    'transaction_status' => 'pending',
+                    'fraud_status'       => 'accept',
+                ]);
+        });
+
+        $this->actingAs($akun)
+            ->get(route('payment.success', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertRedirect(route('payment.show', [
+                'tipe'     => 'produk',
+                'pesanan'  => $id,
+                'menunggu' => 1,
+            ]))
+            ->assertSessionHas('info');
+
+        $pesanan = PesananProduk::findOrFail($id);
+        $this->assertSame('unpaid', $pesanan->status_pembayaran);
+        $this->assertNull($pesanan->tanggal_bayar);
+    }
+
+    public function test_payment_success_does_not_mark_order_paid_when_midtrans_api_fails(): void
+    {
+        [$customer, $akun] = $this->buatCustomer('Oscar Pratama');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-914', 50000, [
+            'invoice_number'    => 'INV-20261123-OP01',
+            'midtrans_order_id' => 'INV-20261123-OP01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldReceive('status')
+                ->once()
+                ->andThrow(new \RuntimeException('Koneksi ke Midtrans gagal.'));
+        });
+
+        $this->actingAs($akun)
+            ->get(route('payment.success', ['tipe' => 'produk', 'pesanan' => $id]))
+            ->assertRedirect(route('payment.show', [
+                'tipe'     => 'produk',
+                'pesanan'  => $id,
+                'menunggu' => 1,
+            ]))
+            ->assertSessionHas('info');
+
+        $this->assertSame('unpaid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    public function test_payment_show_with_menunggu_does_not_auto_open_snap(): void
+    {
+        [$customer, $akun] = $this->buatCustomer('Putri Amelia');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-915', 50000, [
+            'invoice_number' => 'INV-20261123-PA01',
+            'snap_token'     => 'snap-token-test-915',
+        ]);
+
+        $html = $this->withoutVite()
+            ->actingAs($akun)
+            ->get(route('payment.show', [
+                'tipe'     => 'produk',
+                'pesanan'  => $id,
+                'menunggu' => 1,
+            ]))
+            ->assertOk()
+            ->assertSee('Pembayaran belum dikonfirmasi Midtrans')
+            ->getContent();
+
+        $this->assertStringNotContainsString('bukaSnap();   // popup langsung terbuka', $html);
+    }
+
     public function test_checkout_keeps_single_order_and_clears_cart_when_snap_token_fails(): void
     {
         [$customer, $akun] = $this->buatCustomer('Fajar Nugroho');
@@ -341,6 +422,63 @@ class CheckoutMidtransTest extends TestCase
         // Notifikasi yang sama dikirim ulang tidak boleh memotong stok lagi.
         $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
         $this->assertSame(5, (int) DB::table('produk')->where('id', $produk)->value('stok'));
+    }
+
+    public function test_midtrans_webhook_marks_capture_with_fraud_accept_as_paid(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Nanda Pratama');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-916', 50000, [
+            'invoice_number'    => 'INV-20261123-NP02',
+            'midtrans_order_id' => 'INV-20261123-NP02',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-NP02', '50000.00', 'capture', [
+            'fraud_status' => 'accept',
+        ]);
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $this->assertSame('paid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    public function test_midtrans_webhook_keeps_capture_with_fraud_challenge_unpaid(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Oki Ramadhan');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-917', 50000, [
+            'invoice_number'    => 'INV-20261123-OR01',
+            'midtrans_order_id' => 'INV-20261123-OR01',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-OR01', '50000.00', 'capture', [
+            'fraud_status' => 'challenge',
+        ]);
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $this->assertSame('unpaid', PesananProduk::findOrFail($id)->status_pembayaran);
+    }
+
+    public function test_midtrans_webhook_marks_capture_with_fraud_deny_as_failed(): void
+    {
+        config(['midtrans.server_key' => 'server-key-uji']);
+
+        [$customer] = $this->buatCustomer('Puput Lestari');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-918', 50000, [
+            'invoice_number'    => 'INV-20261123-PL01',
+            'midtrans_order_id' => 'INV-20261123-PL01',
+        ]);
+
+        $payload = $this->payloadNotifikasi('INV-20261123-PL01', '50000.00', 'capture', [
+            'fraud_status' => 'deny',
+        ]);
+
+        $this->postJson(route('midtrans.notifikasi'), $payload)->assertOk();
+
+        $this->assertSame('failed', PesananProduk::findOrFail($id)->status_pembayaran);
     }
 
     public function test_midtrans_webhook_rejects_invalid_signature(): void

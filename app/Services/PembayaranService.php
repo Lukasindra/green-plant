@@ -148,9 +148,10 @@ class PembayaranService
     }
 
     /**
-     * Tanya status terakhir ke API Midtrans (dipakai polling dan callback sukses).
+     * Tanya status terakhir ke API Midtrans (dipakai polling, callback sukses,
+     * rekonsiliasi, dan pengaman pembatalan pesanan).
      *
-     * @return array{status: string, peringatan: ?string}
+     * @return array{status: string, peringatan: ?string, belum_ada?: bool}
      */
     public function sinkronkan($pesanan, string $tipe): array
     {
@@ -178,7 +179,7 @@ class PembayaranService
 
         // Transaksi belum pernah dibuat di Midtrans (mis. token belum dipakai).
         if (($status['transaction_status'] ?? null) === 'belum_ada') {
-            return ['status' => 'pending', 'peringatan' => null];
+            return ['status' => 'pending', 'peringatan' => null, 'belum_ada' => true];
         }
 
         $this->catatTransaksi($pesanan, $orderId, $status);
@@ -251,6 +252,8 @@ class PembayaranService
     /** @param array{status: string, peringatan: ?string} */
     private function terapkan($pesanan, string $tipe, string $status, ?string $fraud): array
     {
+        $fraud = $fraud === null ? null : strtolower($fraud);
+
         if ($this->dibatalkan($pesanan)) {
             Log::warning('Pembayaran Midtrans masuk untuk pesanan yang sudah dibatalkan: '
                 . ($pesanan->invoice_number ?? $pesanan->kode));
@@ -269,7 +272,8 @@ class PembayaranService
             return ['status' => 'paid', 'peringatan' => $this->tandaiLunas($pesanan, $tipe)];
         }
 
-        if (in_array($status, ['deny', 'cancel', 'expire', 'failure'], true)) {
+        if (in_array($status, ['deny', 'cancel', 'expire', 'failure'], true)
+            || ($status === 'capture' && $fraud === 'deny')) {
             $this->tandaiGagal($pesanan);
 
             return ['status' => 'failed', 'peringatan' => null];

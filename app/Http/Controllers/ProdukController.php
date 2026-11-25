@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Kategori;
 use App\Models\Produk;
+use App\Support\PencarianKatalog;
 use Illuminate\Http\Request;
 
 class ProdukController extends Controller
 {
+    use PencarianKatalog;
+
     public function index(Request $request)
     {
         // Semua input dari URL divalidasi dulu
@@ -25,12 +28,7 @@ class ProdukController extends Controller
 
         $query = Produk::with('kategori')->where('harga', '<=', $maks);
 
-        if ($q !== '') {
-            $query->where(function ($cari) use ($q) {
-                $cari->where('nama', 'like', "%{$q}%")
-                    ->orWhere('deskripsi', 'like', "%{$q}%");
-            });
-        }
+        $this->terapkanPencarian($query, $q);
 
         if ($kategoriAktif) {
             $query->where('kategori_id', $kategoriAktif);

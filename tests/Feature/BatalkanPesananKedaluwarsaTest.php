@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Akun;
+use App\Services\MidtransService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -42,6 +43,7 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
             $table->string('kode')->unique();
             $table->string('invoice_number')->nullable()->unique();
             $table->string('snap_token')->nullable();
+            $table->string('midtrans_order_id')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -61,6 +63,7 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
             $table->string('kode')->unique();
             $table->string('invoice_number')->nullable()->unique();
             $table->string('snap_token')->nullable();
+            $table->string('midtrans_order_id')->nullable();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('admin_id')->nullable();
             $table->date('tanggal_pesan');
@@ -178,6 +181,109 @@ class BatalkanPesananKedaluwarsaTest extends TestCase
         $this->artisan('pesanan:batalkan-kedaluwarsa', ['--hari' => 0])
             ->expectsOutputToContain('Nilai --hari minimal 1.')
             ->assertFailed();
+    }
+
+    public function test_order_with_settled_midtrans_is_marked_paid_and_not_cancelled(): void
+    {
+        [$customer] = $this->buatCustomer('Yuni Astuti');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-350', 60000, [
+            'tanggal_pesan'     => $this->hariLalu(3),
+            'midtrans_order_id' => 'INV-20261026-YA01',
+        ]);
+
+        $this->artisan('pesanan:batalkan-kedaluwarsa')
+            ->expectsOutputToContain('Pesanan produk dibatalkan: 0')
+            ->assertSuccessful();
+
+        $pesanan = DB::table('pesanan_produk')->where('id', $id)->first();
+        $this->assertSame('paid', $pesanan->status_pembayaran);
+        $this->assertNotSame('dibatalkan', $pesanan->status_pesanan);
+    }
+
+    public function test_pending_midtrans_order_is_not_cancelled(): void
+    {
+        [$customer] = $this->buatCustomer('Zahra Nabila');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-351', 60000, [
+            'tanggal_pesan'     => $this->hariLalu(3),
+            'midtrans_order_id' => 'INV-20261026-ZN01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldReceive('status')->once()->andReturn([
+                'status_code'        => '201',
+                'order_id'           => 'INV-20261026-ZN01',
+                'transaction_status' => 'pending',
+                'fraud_status'       => 'accept',
+            ]);
+        });
+
+        $this->artisan('pesanan:batalkan-kedaluwarsa')
+            ->expectsOutputToContain('ditahan karena status Midtrans belum final: 1')
+            ->assertSuccessful();
+
+        $pesanan = DB::table('pesanan_produk')->where('id', $id)->first();
+        $this->assertSame('unpaid', $pesanan->status_pembayaran);
+        $this->assertSame('diproses', $pesanan->status_pesanan);
+    }
+
+    public function test_unused_snap_token_still_allows_cancellation(): void
+    {
+        [$customer] = $this->buatCustomer('Agus Setiawan');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-352', 60000, [
+            'tanggal_pesan'     => $this->hariLalu(3),
+            'midtrans_order_id' => 'INV-20261026-AS01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldReceive('status')->once()->andReturn([
+                'order_id'           => 'INV-20261026-AS01',
+                'transaction_status' => 'belum_ada',
+            ]);
+        });
+
+        $this->artisan('pesanan:batalkan-kedaluwarsa')
+            ->expectsOutputToContain('Pesanan produk dibatalkan: 1')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('pesanan_produk', ['id' => $id, 'status_pesanan' => 'dibatalkan']);
+    }
+
+    public function test_midtrans_api_failure_postpones_cancellation(): void
+    {
+        [$customer] = $this->buatCustomer('Bella Safitri');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-353', 60000, [
+            'tanggal_pesan'     => $this->hariLalu(3),
+            'midtrans_order_id' => 'INV-20261026-BS01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldReceive('status')->once()->andThrow(new \RuntimeException('Koneksi gagal.'));
+        });
+
+        $this->artisan('pesanan:batalkan-kedaluwarsa')
+            ->expectsOutputToContain('ditahan karena status Midtrans belum final: 1')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('pesanan_produk', ['id' => $id, 'status_pesanan' => 'diproses']);
+    }
+
+    public function test_dry_run_does_not_call_midtrans(): void
+    {
+        [$customer] = $this->buatCustomer('Cindy Maharani');
+        $id = $this->buatPesananProduk($customer, 'PSN-P-354', 60000, [
+            'tanggal_pesan'     => $this->hariLalu(5),
+            'midtrans_order_id' => 'INV-20261026-CM01',
+        ]);
+
+        $this->mock(MidtransService::class, function ($mock): void {
+            $mock->shouldNotReceive('status');
+        });
+
+        $this->artisan('pesanan:batalkan-kedaluwarsa', ['--dry-run' => true])
+            ->expectsOutputToContain('Pesanan produk yang akan dibatalkan: 1')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('pesanan_produk', ['id' => $id, 'status_pesanan' => 'diproses']);
     }
 
     private function hariLalu(int $hari): string

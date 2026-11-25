@@ -54,6 +54,13 @@
         @if ($pesanan->status_pesanan === 'dibatalkan')
             <p class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">Pesanan ini sudah dibatalkan dan tidak dapat dibayar.</p>
         @elseif ($punyaToken)
+            @if (request()->boolean('menunggu'))
+                <p class="mb-3 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                    Pembayaran belum dikonfirmasi Midtrans. Status akan diperbarui otomatis, atau tekan
+                    <strong>Bayar Sekarang</strong> untuk melanjutkan pembayaran.
+                </p>
+            @endif
+
             <p class="mb-3 text-sm text-gray-600">Tekan tombol di bawah untuk membuka jendela pembayaran. Semua metode (QRIS, e-wallet, transfer bank, kartu) dipilih di dalam jendela Midtrans.</p>
 
             <div id="bayar-area">
@@ -138,7 +145,10 @@
                 }
 
                 if (tombol) tombol.addEventListener('click', bukaSnap);
-                bukaSnap();   // popup langsung terbuka saat halaman dibuka
+
+                @if (! request()->boolean('menunggu'))
+                    bukaSnap();   // popup langsung terbuka saat halaman dibuka
+                @endif
             })();
         </script>
     @else
