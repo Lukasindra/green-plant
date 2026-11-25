@@ -15,9 +15,29 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    /** Opsi rentang grafik penjualan (hari => label tombol). */
+    private const PERIODE_GRAFIK = [
+        7   => '7 Hari',
+        30  => '30 Hari',
+        90  => '90 Hari',
+        365 => '1 Tahun',
+    ];
+
+    /** Keterangan rentang untuk subjudul grafik. */
+    private const KETERANGAN_PERIODE = [
+        7   => '7 hari terakhir',
+        30  => '30 hari terakhir',
+        90  => '90 hari terakhir',
+        365 => '12 bulan terakhir',
+    ];
+
     public function __invoke(Request $request): View
     {
         $hariIni = CarbonImmutable::today();
+
+        // Rentang grafik dipilih lewat ?periode=7|30|90|365 (default 30 hari).
+        $periode = $request->integer('periode', 30);
+        $periode = array_key_exists($periode, self::PERIODE_GRAFIK) ? $periode : 30;
 
         // Pesanan terbaru (produk + jasa), diurutkan dari yang paling baru
         $recentOrders = $this->pesananTerbaru(PesananProduk::class, 'Produk')
@@ -30,30 +50,75 @@ class DashboardController extends Controller
         $pendapatanBulanIni = (int) $this->pesananBerbayar(PesananProduk::class, $hariIni->startOfMonth(), $hariIni->endOfMonth())->sum('total_bayar')
             + (int) $this->pesananBerbayar(PesananJasa::class, $hariIni->startOfMonth(), $hariIni->endOfMonth())->sum('total_bayar');
 
-        // Grafik penjualan 30 hari terakhir (juga hanya pesanan lunas)
-        $awalGrafik = $hariIni->subDays(29);
-        $nilaiHarian = $this->pesananBerbayar(PesananProduk::class, $awalGrafik, $hariIni)
-            ->concat($this->pesananBerbayar(PesananJasa::class, $awalGrafik, $hariIni))
-            ->groupBy(fn ($pesanan): string => CarbonImmutable::parse($pesanan->tanggal_pesan)->toDateString())
+        // Grafik penjualan sesuai rentang pilihan (juga hanya pesanan lunas).
+        // Rentang panjang diagregasi agar titik grafik tidak terlalu padat:
+        // 90 hari -> per minggu, 1 tahun -> per bulan.
+        $awalGrafik = match ($periode) {
+            365 => $hariIni->startOfMonth()->subMonths(11),
+            90  => $hariIni->subDays(89),
+            default => $hariIni->subDays($periode - 1),
+        };
+
+        $pesananGrafik = $this->pesananBerbayar(PesananProduk::class, $awalGrafik, $hariIni)
+            ->concat($this->pesananBerbayar(PesananJasa::class, $awalGrafik, $hariIni));
+
+        // Kunci pengelompokan: bulan (Y-m), indeks minggu, atau tanggal (Y-m-d).
+        $kunciGrafik = function ($tanggal) use ($periode, $awalGrafik): string {
+            $t = CarbonImmutable::parse($tanggal);
+
+            if ($periode === 365) {
+                return $t->format('Y-m');
+            }
+
+            if ($periode === 90) {
+                return (string) intdiv(max(0, (int) round($awalGrafik->diffInDays($t))), 7);
+            }
+
+            return $t->format('Y-m-d');
+        };
+
+        $nilaiGrafik = $pesananGrafik
+            ->groupBy(fn ($pesanan): string => $kunciGrafik($pesanan->tanggal_pesan))
             ->map(fn (Collection $pesanan): int => (int) $pesanan->sum('total_bayar'));
 
-        $salesChart = collect(range(0, 29))
-            ->map(function (int $offset) use ($awalGrafik, $nilaiHarian): array {
-                $tanggal = $awalGrafik->addDays($offset);
+        $salesChart = match ($periode) {
+            365 => collect(range(0, 11))->map(function (int $offset) use ($awalGrafik, $nilaiGrafik): array {
+                $bulan = $awalGrafik->addMonths($offset);
 
                 return [
-                    'tanggal' => $tanggal->toDateString(),
-                    'label' => $tanggal->format('d M'),
-                    'nilai' => $nilaiHarian->get($tanggal->toDateString(), 0),
+                    'tanggal' => $bulan->toDateString(),
+                    'label' => $bulan->format('M Y'),
+                    'nilai' => $nilaiGrafik->get($bulan->format('Y-m'), 0),
                 ];
-            });
+            }),
+            90 => collect(range(0, 12))->map(function (int $minggu) use ($awalGrafik, $nilaiGrafik): array {
+                $mulai = $awalGrafik->addDays($minggu * 7);
+
+                return [
+                    'tanggal' => $mulai->toDateString(),
+                    'label' => $mulai->format('d M'),
+                    'nilai' => $nilaiGrafik->get((string) $minggu, 0),
+                ];
+            }),
+            default => collect(range(0, $periode - 1))
+                ->map(function (int $offset) use ($awalGrafik, $nilaiGrafik): array {
+                    $tanggal = $awalGrafik->addDays($offset);
+
+                    return [
+                        'tanggal' => $tanggal->toDateString(),
+                        'label' => $tanggal->format('d M'),
+                        'nilai' => $nilaiGrafik->get($tanggal->toDateString(), 0),
+                    ];
+                }),
+        };
 
         $puncakNilai = (int) $salesChart->max('nilai');
         $pembagi = max(1, $puncakNilai);
+        $jumlahTitik = max(1, $salesChart->count() - 1);
         $chartPoints = $salesChart
             ->values()
-            ->map(function (array $hari, int $index) use ($pembagi): string {
-                $x = (int) round($index * 600 / 29);
+            ->map(function (array $hari, int $index) use ($pembagi, $jumlahTitik): string {
+                $x = (int) round($index * 600 / $jumlahTitik);
                 $y = 180 - (int) round($hari['nilai'] / $pembagi * 160);
 
                 return "{$x},{$y}";
@@ -75,6 +140,9 @@ class DashboardController extends Controller
             'puncakNilai' => $puncakNilai,
             'pembayaranGagal' => $pembayaranGagal,
             'stokRendah' => $stokRendah,
+            'periodeAktif' => $periode,
+            'periodeGrafik' => self::PERIODE_GRAFIK,
+            'keteranganPeriode' => self::KETERANGAN_PERIODE[$periode],
         ]);
     }
 

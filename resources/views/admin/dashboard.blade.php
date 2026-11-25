@@ -144,13 +144,22 @@
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="font-semibold text-gray-900">Penjualan</h2>
-                    <p class="mt-1 text-xs text-gray-500">30 hari terakhir</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ $keteranganPeriode }}</p>
                 </div>
-                <span class="rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-800">30 Hari</span>
+
+                <form method="GET" action="{{ route('admin.dashboard') }}">
+                    <label for="periode-grafik" class="sr-only">Rentang grafik penjualan</label>
+                    <select id="periode-grafik" name="periode" onchange="this.form.submit()" title="Pilih rentang grafik"
+                        class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600">
+                        @foreach ($periodeGrafik as $nilai => $label)
+                            <option value="{{ $nilai }}" @selected($periodeAktif === $nilai)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </form>
             </div>
 
             <div class="mt-5">
-                <svg viewBox="0 0 600 210" role="img" aria-label="Grafik penjualan harian selama 30 hari terakhir" class="h-52 w-full overflow-visible">
+                <svg viewBox="0 0 600 210" role="img" aria-label="Grafik penjualan {{ $keteranganPeriode }}" class="h-52 w-full overflow-visible">
                     <line x1="0" y1="20" x2="600" y2="20" stroke="#e5e7eb" stroke-dasharray="4 5" />
                     <line x1="0" y1="100" x2="600" y2="100" stroke="#e5e7eb" stroke-dasharray="4 5" />
                     <line x1="0" y1="180" x2="600" y2="180" stroke="#e5e7eb" />
@@ -162,10 +171,17 @@
                 </svg>
                 <div class="flex justify-between text-xs text-gray-500">
                     <span>{{ $salesChart->first()['label'] }}</span>
-                    <span>{{ $salesChart->slice(14, 1)->first()['label'] }}</span>
+                    <span>{{ $salesChart->slice(intdiv($salesChart->count() - 1, 2), 1)->first()['label'] }}</span>
                     <span>{{ $salesChart->last()['label'] }}</span>
                 </div>
-                <p class="mt-4 text-xs leading-5 text-gray-500">Grafik hanya menghitung pesanan yang sudah lunas.</p>
+                <p class="mt-4 text-xs leading-5 text-gray-500">
+                    Grafik hanya menghitung pesanan yang sudah lunas.
+                    @if ($periodeAktif === 90)
+                        Nilai ditampilkan per minggu.
+                    @elseif ($periodeAktif === 365)
+                        Nilai ditampilkan per bulan.
+                    @endif
+                </p>
             </div>
         </x-card>
     </section>
